@@ -1,0 +1,9 @@
+{
+  "name": "MultiBasket AI Vision",
+  "short_name": "MultiBasket",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050b14",
+  "theme_color": "#06111f"
+}
