@@ -28,12 +28,12 @@ def norm(g):
     short=str(status.get("short") or "").upper()
     q=4
     for ch in short:
-        if ch.isdigit():q=int(ch);break
+        if ch.isdigit(): q=int(ch); break
     return {"fixture_id":str(g.get("id")),"home":(teams.get("home",{}) or {}).get("name") or "Casa","away":(teams.get("away",{}) or {}).get("name") or "Ospite","home_id":(teams.get("home",{}) or {}).get("id"),"away_id":(teams.get("away",{}) or {}).get("id"),"home_score":int(hs),"away_score":int(aw),"quarter":q,"clock":status.get("timer") or status.get("clock") or status.get("elapsed") or "0:00","league":(g.get("league") or {}).get("name") or "","source":"api-live"}
 
 def fixture(fid):
     resp=api("games",{"id":fid}).get("response",[])
-    if not resp:raise Exception("Fixture non trovata")
+    if not resp: raise Exception("Fixture non trovata")
     return norm(resp[0])
 
 def clock_min(x):
@@ -42,7 +42,8 @@ def clock_min(x):
         if ":" in s:
             m,sec=s.split(":")[:2]; return int(m)+int(sec)/60
         return float(s)
-    except Exception:return 0.0
+    except Exception:
+        return 0.0
 
 def ritmo(p):
     if p<2.4:return"Molto lento"
@@ -70,10 +71,10 @@ def live_decide(live,bankroll,line):
     value=pred-line
     po=round(100/(1+math.exp(-value/5.2))); pu=100-po
     side=None; thr=8 if played>=8 else 10
-    if value>=thr:side="OVER"
-    elif value<=-thr:side="UNDER"
+    if value>=thr: side="OVER"
+    elif value<=-thr: side="UNDER"
     conf=0
-    if side:conf=round(min(100,min(55,abs(value)*4)+min(20,played/40*28)+15+(10 if bankroll>=20 else 5)))
+    if side: conf=round(min(100,min(55,abs(value)*4)+min(20,played/40*28)+15+(10 if bankroll>=20 else 5)))
     st=stake(bankroll,conf)
     if side and conf>=65:
         signal="BET"; action=f"GIOCA {side}"; text=f"Scommetti {side} {line}"
@@ -83,9 +84,7 @@ def live_decide(live,bankroll,line):
         signal="NO_BET"; action="NON GIOCARE"; text="Non scommettere"
     share=h/total if total else .5
     fh=round(pred*share); fa=round(pred-fh)
-    why=["Dato live disponibile","Calcolo sul ritmo reale","Stake prudente sul bankroll"]
-    reason=f"Analisi live: totale previsto {pred}, valore {value:+.1f} sulla linea {line}, ritmo {ritmo(pace).lower()}."
-    return {"signal":signal,"action":action,"decision_text":text,"side":side,"line":line,"stake":st,"confidence":conf,"score":f"{h}-{a}","clock":f"{live.get('clock')} Q{q}","teams":{"home":live.get("home") or "Casa","away":live.get("away") or "Ospite"},"rhythm":ritmo(pace),"total_predicted":pred,"final_score":f"{fh}-{fa}","value":round(value,1),"prob_over":po,"prob_under":pu,"reason":reason,"why":why,"source":"api-live"}
+    return {"signal":signal,"action":action,"decision_text":text,"side":side,"line":line,"stake":st,"confidence":conf,"score":f"{h}-{a}","clock":f"{live.get('clock')} Q{q}","teams":{"home":live.get("home") or "Casa","away":live.get("away") or "Ospite"},"rhythm":ritmo(pace),"total_predicted":pred,"final_score":f"{fh}-{fa}","value":round(value,1),"prob_over":po,"prob_under":pu,"reason":f"Analisi live: totale previsto {pred}, valore {value:+.1f} sulla linea {line}, ritmo {ritmo(pace).lower()}.","why":["Dato live disponibile","Calcolo sul ritmo reale","Stake prudente sul bankroll"],"source":"api-live"}
 
 def parse_json(t):
     c=(t or "").replace("```json","").replace("```","").strip()
@@ -95,9 +94,9 @@ def parse_json(t):
 def extract(raw,mime):
     b64=base64.b64encode(raw).decode()
     client=OpenAI(api_key=OPENAI_API_KEY)
-    prompt=\"\"\"Estrai dati da screenshot basket live bookmaker. Rispondi SOLO JSON valido:
+    prompt = """Estrai dati da screenshot basket live bookmaker. Rispondi SOLO JSON valido:
 {"homeTeam":string|null,"awayTeam":string|null,"homeScore":number|null,"awayScore":number|null,"quarter":number|null,"timeRemaining":"M:SS"|null,"lineOU":number|null,"oddsOver":number|null,"oddsUnder":number|null,"confidence":number}
-Non inventare dati non visibili. La linea O/U è la linea punti totali.\"\"\"
+Non inventare dati non visibili. La linea O/U è la linea punti totali."""
     res=client.chat.completions.create(model=OPENAI_MODEL,messages=[
         {"role":"system","content":prompt},
         {"role":"user","content":[{"type":"text","text":"Leggi screenshot."},{"type":"image_url","image_url":{"url":f"data:{mime};base64,{b64}"}}]}
@@ -110,19 +109,19 @@ def match_live(ex):
     best=None; bests=0
     for g in games:
         s=0; gh=g["home"].lower(); ga=g["away"].lower()
-        if ht and (ht in gh or gh in ht):s+=3
-        if at and (at in ga or ga in at):s+=3
+        if ht and (ht in gh or gh in ht): s+=3
+        if at and (at in ga or ga in at): s+=3
         try:
-            if ex.get("homeScore") is not None and int(ex["homeScore"])==g["home_score"]:s+=1
-            if ex.get("awayScore") is not None and int(ex["awayScore"])==g["away_score"]:s+=1
-        except Exception:pass
-        if s>bests:best,bests=g,s
+            if ex.get("homeScore") is not None and int(ex["homeScore"])==g["home_score"]: s+=1
+            if ex.get("awayScore") is not None and int(ex["awayScore"])==g["away_score"]: s+=1
+        except Exception: pass
+        if s>bests: best,bests=g,s
     return best if bests>=3 else None
 
-def clean(x):return re.sub(r"[^a-z0-9 ]"," ",(x or "").lower()).strip()
+def clean(x): return re.sub(r"[^a-z0-9 ]"," ",(x or "").lower()).strip()
 
 def team_id(name):
-    if not name:return None
+    if not name: return None
     try:
         res=api("teams",{"search":name}).get("response",[])
         nc=clean(name); best=None; bests=0
@@ -130,10 +129,10 @@ def team_id(name):
             t=item.get("name") or (item.get("team") or {}).get("name") or ""
             tid=item.get("id") or (item.get("team") or {}).get("id")
             tc=clean(t); s=0
-            if nc and nc in tc:s+=4
-            if tc and tc in nc:s+=3
+            if nc and nc in tc: s+=4
+            if tc and tc in nc: s+=3
             s+=len(set(nc.split())&set(tc.split()))
-            if s>bests:best,bests=tid,s
+            if s>bests: best,bests=tid,s
         return best
     except Exception as e:
         print("[TEAM SEARCH]",e); return None
@@ -156,9 +155,9 @@ def recent_totals(tid,limit=12):
         try:
             for g in api("games",{"team":tid,"season":season}).get("response",[]):
                 tot=game_total(g)
-                if tot:out.append(tot)
-                if len(out)>=limit:break
-        except Exception as e:print("[TEAM GAMES]",tid,season,e)
+                if tot: out.append(tot)
+                if len(out)>=limit: break
+        except Exception as e: print("[TEAM GAMES]",tid,season,e)
     return out[:limit]
 
 def h2h_totals(hid,aid,limit=6):
@@ -167,9 +166,9 @@ def h2h_totals(hid,aid,limit=6):
     try:
         for g in api("games",{"h2h":f"{hid}-{aid}"}).get("response",[]):
             tot=game_total(g)
-            if tot:out.append(tot)
-            if len(out)>=limit:break
-    except Exception as e:print("[H2H]",e)
+            if tot: out.append(tot)
+            if len(out)>=limit: break
+    except Exception as e: print("[H2H]",e)
     return out[:limit]
 
 def historical_decide(ex,bankroll,line):
@@ -186,8 +185,8 @@ def historical_decide(ex,bankroll,line):
     over_rate=sum(1 for t in totals if t>line)/sample
     po=round(over_rate*100); pu=100-po
     side=None
-    if value>=7 and po>=62:side="OVER"
-    elif value<=-7 and pu>=62:side="UNDER"
+    if value>=7 and po>=62: side="OVER"
+    elif value<=-7 and pu>=62: side="UNDER"
     conf=round(min(86,55+min(20,abs(value)*2)+min(15,max(0,sample-8)*2))) if side else round(min(60,45+abs(value)))
     st=stake(bankroll,conf) if side and conf>=65 else 0
     if side and st>0:
@@ -205,10 +204,10 @@ def historical_decide(ex,bankroll,line):
     return {"signal":signal,"action":action,"decision_text":text,"side":side,"line":line,"stake":st,"confidence":conf,"score":score,"clock":clock,"teams":{"home":home,"away":away},"rhythm":"Storico","total_predicted":pred,"final_score":"stima storica","value":round(value,1),"prob_over":po,"prob_under":pu,"reason":reason,"why":why,"source":"historical-fallback","historical_sample":sample}
 
 @app.route("/")
-def home():return send_from_directory(".","index.html")
+def home(): return send_from_directory(".","index.html")
 
 @app.route("/api/health")
-def health():return jsonify({"ok":True,"api_basketball":bool(API_KEY),"telegram":bool(TG_TOKEN and TG_CHAT),"openai":bool(OPENAI_API_KEY)})
+def health(): return jsonify({"ok":True,"api_basketball":bool(API_KEY),"telegram":bool(TG_TOKEN and TG_CHAT),"openai":bool(OPENAI_API_KEY)})
 
 @app.route("/api/live/games")
 def live_games():
@@ -249,7 +248,7 @@ def bet():
     return jsonify({"ok":True,"message":"Giocata registrata. Telegram attivo."})
 
 @app.route("/api/bet/quality")
-def quality():return jsonify({"message":"Se non c'è live tracking, ricarica uno screenshot aggiornato per rivalutare."})
+def quality(): return jsonify({"message":"Se non c'è live tracking, ricarica uno screenshot aggiornato per rivalutare."})
 
 @app.route("/api/telegram/test",methods=["POST"])
 def telegram_test():
