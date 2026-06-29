@@ -57,7 +57,9 @@ def puntata(bankroll,conf):
     elif conf>=70:p=.03
     elif conf>=65:p=.02
     else:p=0
-    return max(0,round(bankroll*p))
+    if p == 0:
+        return 0
+    return max(1, round(bankroll*p))
 
 def decide(live,bankroll,line):
     h=int(live.get("home_score") or 0); a=int(live.get("away_score") or 0); total=h+a
@@ -74,15 +76,27 @@ def decide(live,bankroll,line):
     if value>=thr:side="OVER"
     elif value<=-thr:side="UNDER"
     conf=0
-    if side:conf=round(min(100,min(55,abs(value)*4)+min(20,played/40*28)+15+(10 if bankroll>=20 else 5)))
+    if side:
+        conf=round(min(100,min(55,abs(value)*4)+min(20,played/40*28)+15+(10 if bankroll>=20 else 5)))
     st=puntata(bankroll,conf)
-    signal="BET" if side and conf>=65 and st>0 else ("OBSERVE" if abs(value)>=4 else "NO_BET")
+    if side and conf>=65:
+        signal="BET"; action=f"GIOCA {side}"; headline=f"{side} {line}"; decision_text=f"Scommetti {side} {line}"
+    elif abs(value)>=4:
+        signal="OBSERVE"; action="OSSERVA"; headline="OSSERVA"; decision_text="Non entrare ancora"
+    else:
+        signal="NO_BET"; action="NON GIOCARE"; headline="NO BET"; decision_text="Non scommettere"
     share=h/total if total else .5
     fh=round(pred*share); fa=round(pred-fh)
-    if signal=="BET":reason=f"{side} con valore {value:+.1f}: totale previsto {pred}, linea {line}."
-    elif signal=="OBSERVE":reason=f"Osserva: valore {value:+.1f}, non ancora sufficiente."
-    else:reason=f"No bet: valore {value:+.1f} insufficiente rispetto alla linea {line}."
-    return {"signal":signal,"side":side,"line":line,"stake":st,"confidence":conf,"score":f"{h}-{a}","clock":f"{live.get('clock')} Q{q}","teams":{"home":live.get("home") or "Casa","away":live.get("away") or "Ospite"},"rhythm":ritmo(pace),"total_predicted":pred,"final_score":f"{fh}-{fa}","value":round(value,1),"prob_over":po,"prob_under":pu,"reason":reason,"source":live.get("source","api")}
+    if signal=="BET":
+        reason=f"Il totale previsto è {pred}, cioè {value:+.1f} punti rispetto alla linea {line}. Il ritmo è {ritmo(pace).lower()} e la fiducia è {conf}/100."
+        why=["Scostamento netto dalla linea bookmaker","Ritmo partita favorevole","Tempo residuo sufficiente","Puntata proporzionata al bankroll"]
+    elif signal=="OBSERVE":
+        reason=f"C'è valore teorico ({value:+.1f}), ma non è ancora abbastanza sicuro per entrare. Aspetta un cambio linea o un nuovo screenshot."
+        why=["Valore interessante ma non ancora operativo","Meglio attendere conferma del ritmo","Puntata consigliata 0 €"]
+    else:
+        reason=f"Il valore rispetto alla linea è {value:+.1f}: troppo basso o troppo rischioso. Meglio evitare."
+        why=["Valore insufficiente","Rischio non compensato","Puntata consigliata 0 €"]
+    return {"signal":signal,"action":action,"headline":headline,"decision_text":decision_text,"side":side,"line":line,"stake":st,"confidence":conf,"score":f"{h}-{a}","clock":f"{live.get('clock')} Q{q}","teams":{"home":live.get("home") or "Casa","away":live.get("away") or "Ospite"},"rhythm":ritmo(pace),"total_predicted":pred,"final_score":f"{fh}-{fa}","value":round(value,1),"prob_over":po,"prob_under":pu,"reason":reason,"why":why,"source":live.get("source","api")}
 
 def parse_json(t):
     c=(t or "").replace("```json","").replace("```","").strip()
