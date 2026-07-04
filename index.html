@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MultiBasket AI PRO</title>
+
 <style>
 body{margin:0;font-family:system-ui;background:#050b14;color:#f8fafc}
 .app{max-width:900px;margin:auto;padding:14px}
@@ -19,16 +20,23 @@ button{background:#38bdf8;color:#03111f;font-weight:900;border:0}
 .green{background:linear-gradient(135deg,#047857,#22c55e)}
 .red{background:linear-gradient(135deg,#991b1b,#ef4444)}
 .amber{background:linear-gradient(135deg,#92400e,#f59e0b)}
-.main{font-size:32px;font-weight:1000}
-.stake{font-size:25px;font-weight:1000;margin-top:8px}
+.main{font-size:34px;font-weight:1000}
+.stake{font-size:26px;font-weight:1000;margin-top:8px}
+.sub{font-size:15px;line-height:1.45;margin-top:8px}
 .small{font-size:13px;color:#bae6fd;line-height:1.45}
 .metric{background:#07111f;border:1px solid #26364f;border-radius:16px;padding:10px;text-align:center}
+.metric b{font-size:20px}
 .metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .preview{width:100%;border-radius:16px;margin-top:10px;display:none}
 .why{margin-top:10px;text-align:left;background:rgba(0,0,0,.18);padding:12px;border-radius:16px}
 .why div{margin:6px 0}
 .prob{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .pill{background:rgba(255,255,255,.14);border-radius:14px;padding:10px;font-weight:900}
+.waitbox{background:#07111f;border:1px solid #38bdf8;border-radius:20px;padding:14px;margin-bottom:12px}
+.waittitle{font-size:20px;font-weight:1000;margin-bottom:8px}
+.waitgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.waititem{background:#0d1726;border:1px solid #26364f;border-radius:16px;padding:12px;text-align:center}
+.waititem b{font-size:24px}
 </style>
 </head>
 
@@ -37,7 +45,7 @@ button{background:#38bdf8;color:#03111f;font-weight:900;border:0}
 
 <section class="hero">
 <h1>🏀 MultiBasket AI PRO</h1>
-<p>Screenshot-first + storico Excel OneDrive: analizza ciò che vede e può leggere il foglio STORICO.</p>
+<p>Carica lo screenshot live: ti dice subito se giocare, quanto puntare o quale linea aspettare.</p>
 </section>
 
 <div class="card">
@@ -46,18 +54,36 @@ button{background:#38bdf8;color:#03111f;font-weight:900;border:0}
 </div>
 
 <div class="card">
-<b>📊 Storico Excel OneDrive</b>
-<input id="onedriveUrl" placeholder="Incolla qui il link condiviso OneDrive del file Excel">
-<button id="loadStorico">Leggi foglio STORICO</button>
-<div id="storicoStatus" class="small">Incolla un link OneDrive condiviso con “chiunque abbia il collegamento può visualizzare”.</div>
-</div>
-
-<div class="card">
-<b>📸 Screenshot</b>
+<b>📸 Screenshot live</b>
 <input id="shot" type="file" accept="image/*">
 <img id="preview" class="preview">
 <button id="analyzeShot">Analizza screenshot</button>
-<div id="shotStatus" class="small">Carica uno screenshot chiaro con punteggio, quarto, cronometro, linea e quote.</div>
+<div id="shotStatus" class="small">Serve uno screenshot chiaro con punteggio, quarto, cronometro, linea e quote.</div>
+</div>
+
+<div id="result" class="result blue">
+<div class="main">CARICA SCREENSHOT</div>
+<div class="stake"></div>
+<div class="sub">Ti dirò cosa scommettere, quanto puntare o se aspettare.</div>
+</div>
+
+<div class="waitbox">
+<div class="waittitle">🎯 Linee convenienti da aspettare</div>
+<div class="waitgrid">
+<div class="waititem">OVER<br><b id="overWait">-</b><br><span class="small">giocabile a questa linea o meno</span></div>
+<div class="waititem">UNDER<br><b id="underWait">-</b><br><span class="small">giocabile da questa linea o più</span></div>
+</div>
+</div>
+
+<div class="card">
+<div class="metrics">
+<div class="metric"><b id="score">-</b><br><span>Punteggio</span></div>
+<div class="metric"><b id="clock">-</b><br><span>Tempo</span></div>
+<div class="metric"><b id="pred">-</b><br><span>Totale previsto</span></div>
+<div class="metric"><b id="final">-</b><br><span>Finale stimato</span></div>
+<div class="metric"><b id="value">-</b><br><span>Margine</span></div>
+<div class="metric"><b id="conf">-</b><br><span>Affidabilità</span></div>
+</div>
 </div>
 
 <div class="card">
@@ -67,23 +93,6 @@ button{background:#38bdf8;color:#03111f;font-weight:900;border:0}
 <button id="startWatch" class="secondary">Avviso Telegram</button>
 </div>
 <div id="status" class="small">Pronto.</div>
-</div>
-
-<div id="result" class="result blue">
-<div class="main">CARICA SCREENSHOT</div>
-<div class="stake"></div>
-<div class="sub">Ti dirò cosa fare, perché e quanto puntare.</div>
-</div>
-
-<div class="card">
-<div class="metrics">
-<div class="metric"><b id="score">-</b><br><span>Punteggio</span></div>
-<div class="metric"><b id="clock">-</b><br><span>Tempo</span></div>
-<div class="metric"><b id="pred">-</b><br><span>Totale previsto</span></div>
-<div class="metric"><b id="final">-</b><br><span>Finale stimato</span></div>
-<div class="metric"><b id="value">-</b><br><span>Valore</span></div>
-<div class="metric"><b id="conf">-</b><br><span>Affidabilità</span></div>
-</div>
 </div>
 
 <div class="card">
@@ -99,56 +108,57 @@ button{background:#38bdf8;color:#03111f;font-weight:900;border:0}
 <script>
 const $=id=>document.getElementById(id);
 let lastDecision=null;
-let storicoData=[];
 
 function status(t){$("status").textContent=t}
 
 async function post(url,body){
-let r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+let r=await fetch(url,{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify(body)
+});
 let j=await r.json().catch(()=>({error:"Risposta non valida"}));
 if(!r.ok)throw new Error(j.error||JSON.stringify(j));
 return j;
 }
 
 function color(j){
-return j.signal==="BET"?"result green":j.signal==="OBSERVE"?"result amber":"result red"
+if(j.signal==="BET")return "result green";
+if(j.signal==="OBSERVE")return "result amber";
+return "result red";
 }
 
 function render(j){
 lastDecision=j;
+
 $("score").textContent=j.score||"-";
 $("clock").textContent=j.clock||"-";
 $("pred").textContent=j.total_predicted??"-";
 $("final").textContent=j.final_score||"-";
 $("value").textContent=(j.value>=0?"+":"")+(j.value??"-");
 $("conf").textContent=(j.confidence??0)+"/100";
+$("overWait").textContent=j.over_wait_line??"-";
+$("underWait").textContent=j.under_wait_line??"-";
 
 let b=$("result");
 b.className=color(j);
+
 b.querySelector(".main").textContent=j.action||"NO BET";
-b.querySelector(".stake").textContent=(j.signal==="BET"?"Punta ":"Puntata ")+(j.stake||0)+" €";
+b.querySelector(".stake").textContent=(j.signal==="BET"?"PUNTA ":"PUNTATA ")+(j.stake||0)+" €";
+
 b.querySelector(".sub").innerHTML=
-`<b>${j.decision_text||""}</b><br>${j.reason||""}<br><b>Fonte:</b> ${j.source||"screenshot"}<div class="prob"><div class="pill">OVER ${j.prob_over}%</div><div class="pill">UNDER ${j.prob_under}%</div></div><div class="why">${(j.why||[]).map(x=>"<div>• "+x+"</div>").join("")}</div>`;
+`<b>${j.decision_text||""}</b><br>
+${j.reason||""}
+<br><b>Fonte:</b> ${j.source||"screenshot"}
+<div class="prob">
+<div class="pill">OVER ${j.prob_over}%</div>
+<div class="pill">UNDER ${j.prob_under}%</div>
+</div>
+<div class="why">${(j.why||[]).map(x=>"<div>• "+x+"</div>").join("")}</div>`;
 
 $("betSide").value=j.side||"";
 $("betLine").value=j.line||"";
 $("betStake").value=j.stake||0;
-}
-
-$("loadStorico").onclick=async()=>{
-let url=$("onedriveUrl").value.trim();
-if(!url){
-$("storicoStatus").textContent="Incolla prima il link OneDrive.";
-return;
-}
-$("storicoStatus").textContent="Lettura del foglio STORICO in corso...";
-try{
-let j=await post("/api/storico/onedrive",{url});
-storicoData=j.storico||[];
-$("storicoStatus").textContent=`✅ STORICO letto correttamente: ${j.rows} righe trovate.`;
-}catch(e){
-$("storicoStatus").textContent="❌ Errore lettura STORICO: "+e.message;
-}
 }
 
 $("shot").onchange=()=>{
@@ -161,21 +171,27 @@ $("shotStatus").textContent="Screenshot caricato.";
 
 $("analyzeShot").onclick=async()=>{
 let f=$("shot").files[0];
+
 if(!f){
 $("shotStatus").textContent="Carica prima uno screenshot.";
 return;
 }
+
 let fd=new FormData();
 fd.append("image",f);
 fd.append("bankroll",parseFloat($("bankroll").value)||25);
 
 $("shotStatus").textContent="AI in lettura...";
+
 try{
 let r=await fetch("/api/screenshot/analyze",{method:"POST",body:fd});
 let j=await r.json();
+
 if(!r.ok)throw new Error(j.error||"Errore");
+
 $("shotStatus").textContent="Analisi completata.";
 if(j.decision)render(j.decision);
+
 }catch(e){
 $("shotStatus").textContent="Errore analisi. Screenshot poco chiaro o OpenAI non disponibile.";
 }
@@ -184,7 +200,7 @@ $("shotStatus").textContent="Errore analisi. Screenshot poco chiaro o OpenAI non
 $("health").onclick=async()=>{
 try{
 let j=await(await fetch("/api/health")).json();
-status("Telegram: "+(j.telegram?"SI":"NO")+" · OpenAI: "+(j.openai?"SI":"NO")+" · STORICO OneDrive: "+(j.storico_onedrive?"SI":"NO")+" · "+j.mode);
+status("Telegram: "+(j.telegram?"SI":"NO")+" · OpenAI: "+(j.openai?"SI":"NO")+" · "+j.mode);
 }catch(e){
 status("Errore server");
 }
