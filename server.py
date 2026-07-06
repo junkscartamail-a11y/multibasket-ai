@@ -36,29 +36,43 @@ def extract(raw, mime):
     b64 = base64.b64encode(raw).decode()
     client = OpenAI(api_key=OPENAI_API_KEY)
 
-    prompt = """Estrai dati da screenshot basket live bookmaker. Rispondi SOLO JSON valido:
+    prompt = """
+Leggi uno screenshot di una partita basket live bookmaker.
+
+Rispondi SOLO con JSON valido.
+
+Devi essere tollerante:
+- Se il cronometro mostra 0:0 o 0:00, usa "0:00".
+- Se siamo a fine secondo quarto/intervallo, quarter = 2 e timeRemaining = "0:00".
+- Se vedi più linee Over/Under, scegli come lineOU la linea più bassa visibile tra quelle principali U/O.
+- Estrai anche tutte le linee U/O visibili se possibile.
+- Non inventare squadre o punteggi, ma se sono visibili devi leggerli.
+
+Formato JSON:
 {
-"homeTeam":string|null,
-"awayTeam":string|null,
-"homeScore":number|null,
-"awayScore":number|null,
-"quarter":number|null,
-"timeRemaining":"M:SS"|null,
-"lineOU":number|null,
-"oddsOver":number|null,
-"oddsUnder":number|null,
-"q1Home":number|null,
-"q1Away":number|null,
-"q2Home":number|null,
-"q2Away":number|null,
-"q3Home":number|null,
-"q3Away":number|null,
-"confidence":number
+  "homeTeam": string|null,
+  "awayTeam": string|null,
+  "homeScore": number|null,
+  "awayScore": number|null,
+  "quarter": number|null,
+  "timeRemaining": "M:SS"|null,
+  "lineOU": number|null,
+  "oddsOver": number|null,
+  "oddsUnder": number|null,
+  "ouLines": [
+    {"line": number, "over": number|null, "under": number|null}
+  ],
+  "q1Home": number|null,
+  "q1Away": number|null,
+  "q2Home": number|null,
+  "q2Away": number|null,
+  "q3Home": number|null,
+  "q3Away": number|null,
+  "q4Home": number|null,
+  "q4Away": number|null,
+  "confidence": number
 }
-Non inventare dati non visibili.
-timeRemaining è il tempo rimanente nel quarto.
-Se il cronometro mostra 0:0 o 0:00 a fine secondo quarto, quarter deve essere 2 e timeRemaining "0:00".
-Se vedi la tabella dei quarti, estrai i parziali Q1, Q2, Q3 quando presenti."""
+"""
 
     r = client.chat.completions.create(
         model=OPENAI_MODEL,
@@ -67,7 +81,7 @@ Se vedi la tabella dei quarti, estrai i parziali Q1, Q2, Q3 quando presenti."""
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "Leggi lo screenshot."},
+                    {"type": "text", "text": "Leggi questo screenshot e restituisci solo JSON."},
                     {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}}
                 ]
             }
@@ -80,7 +94,9 @@ Se vedi la tabella dei quarti, estrai i parziali Q1, Q2, Q3 quando presenti."""
 
 def clock_min(x):
     try:
-        s = str(x or "0:00").strip()
+        s = str(x or "0:00").strip().replace(" ", "")
+        if s in ["0:0", "0.0"]:
+            return 0
         if ":" in s:
             m, sec = s.split(":")[:2]
             return int(m) + int(sec) / 60
@@ -121,91 +137,124 @@ def stake(bankroll, conf, value):
     return max(1, round(bankroll * pct))
 
 
-def quarter_totals(ex):
-    q1_total = None
-    q2_total = None
-    q3_total = None
-
-    if ex.get("q1Home") is not None and ex.get("q1Away") is not None:
-        q1_total = float(ex.get("q1Home")) + float(ex.get("q1Away"))
-
-    if ex.get("q2Home") is not None and ex.get("q2Away") is not None:
-        q2_total = float(ex.get("q2Home")) + float(ex.get("q2Away"))
-
-    if ex.get("q3Home") is not None and ex.get("q3Away") is not None:
-        q3_total = float(ex.get("q3Home")) + float(ex.get("q3Away"))
-
-    return q1_total, q2_total, q3_total
+def safe_float(x):
+    try:
+        if x is None or x == "":
+            return None
+        return float(x)
+    except Exception:
+        return None
 
 
-def trend_quarti(q1_total, q2_total, q3_total):
+def quarter_total(ex, h_key, a_key):
+    h = safe_float(ex.get(h_key))
+    a = safe_float(ex.get(a_key))
+    if h is None or a is None:
+        return None
+    return h + a
+
+
+def choose_best_line(ex):
+    lines = ex.get("ouLines") or []
+
+    valid = []
+    for item in lines:
+        line = safe_float(item.get("line"))
+        over = safe_float(item.get("over"))
+        under = safe_float(item.get("under"))
+        if line is not None:
+            valid.append({"line": line, "over": over, "under": under})
+
+    if valid:
+        # usa la linea più bassa visibile, così evita che lineOU resti null
+        chosen = sorted(valid, key=lambda x: x["line"])[0]
+        return chosen["line"], chosen["over"], chosen["under"], valid
+
+    line = safe_float(ex.get("lineOU"))
+    over = safe_float(ex.get("oddsOver"))
+    under = safe_float(ex.get("oddsUnder"))
+
+    return line, over, under, []
+
+
+def trend_quarti(q1, q2, q3, q4):
     trend_factor = 1.0
-    descrizione = "non disponibile"
+    desc = "trend quarti non disponibile"
 
-    if q1_total and q2_total:
-        diff = q2_total - q1_total
+    if q1 is not None and q2 is not None:
+        diff = q2 - q1
 
         if diff <= -8:
-            trend_factor = 0.92
-            descrizione = "forte rallentamento tra Q1 e Q2"
+            trend_factor *= 0.92
+            desc = f"rallentamento tra Q1 e Q2 ({diff:+.0f} punti)"
         elif diff <= -5:
-            trend_factor = 0.95
-            descrizione = "rallentamento tra Q1 e Q2"
+            trend_factor *= 0.95
+            desc = f"leggero rallentamento tra Q1 e Q2 ({diff:+.0f} punti)"
         elif diff >= 8:
-            trend_factor = 1.08
-            descrizione = "forte accelerazione tra Q1 e Q2"
+            trend_factor *= 1.08
+            desc = f"accelerazione tra Q1 e Q2 ({diff:+.0f} punti)"
         elif diff >= 5:
-            trend_factor = 1.05
-            descrizione = "accelerazione tra Q1 e Q2"
+            trend_factor *= 1.05
+            desc = f"leggera accelerazione tra Q1 e Q2 ({diff:+.0f} punti)"
         else:
-            descrizione = "ritmo abbastanza stabile tra Q1 e Q2"
+            desc = f"ritmo stabile tra Q1 e Q2 ({diff:+.0f} punti)"
 
-    if q2_total and q3_total:
-        diff = q3_total - q2_total
+    if q2 is not None and q3 is not None:
+        diff = q3 - q2
 
         if diff <= -8:
             trend_factor *= 0.94
-            descrizione = "forte rallentamento recente"
+            desc = f"forte rallentamento recente ({diff:+.0f} punti)"
         elif diff <= -5:
             trend_factor *= 0.97
-            descrizione = "rallentamento recente"
+            desc = f"rallentamento recente ({diff:+.0f} punti)"
         elif diff >= 8:
             trend_factor *= 1.06
-            descrizione = "forte accelerazione recente"
+            desc = f"forte accelerazione recente ({diff:+.0f} punti)"
         elif diff >= 5:
             trend_factor *= 1.03
-            descrizione = "accelerazione recente"
+            desc = f"accelerazione recente ({diff:+.0f} punti)"
 
-    return trend_factor, descrizione
+    return trend_factor, desc
 
 
 def decide(ex, bankroll):
     home = ex.get("homeTeam") or "Squadra A"
     away = ex.get("awayTeam") or "Squadra B"
 
-    need = ["homeScore", "awayScore", "quarter", "timeRemaining", "lineOU"]
-    miss = [k for k in need if ex.get(k) is None]
+    line, odds_over, odds_under, all_lines = choose_best_line(ex)
 
-    if miss:
+    required = {
+        "homeScore": ex.get("homeScore"),
+        "awayScore": ex.get("awayScore"),
+        "quarter": ex.get("quarter"),
+        "timeRemaining": ex.get("timeRemaining"),
+        "lineOU": line
+    }
+
+    missing = [k for k, v in required.items() if v is None]
+
+    if missing:
         return nobet(
             home,
             away,
             "-",
             "-",
-            "Dati insufficienti nello screenshot: devono essere leggibili punteggio, quarto, cronometro e linea bookmaker.",
+            "Dati mancanti dall'estrazione AI: " + ", ".join(missing) + ".",
             [
-                "Screenshot incompleto",
-                "Non faccio pronostici inventati",
+                "Lo screenshot può essere leggibile, ma il parser AI non ha restituito tutti i campi",
+                "Serve aggiornare o ritagliare meglio lo screenshot",
                 "Puntata consigliata 0 €"
-            ]
+            ],
+            extracted=ex
         )
 
-    h = int(ex["homeScore"])
-    a = int(ex["awayScore"])
+    h = int(float(ex["homeScore"]))
+    a = int(float(ex["awayScore"]))
     total = h + a
-    q = int(ex["quarter"])
+    q = int(float(ex["quarter"]))
     left = clock_min(ex["timeRemaining"])
-    line = float(ex["lineOU"])
+    line = float(line)
 
     if left is None or q < 1 or q > 4 or left < 0 or left > 10:
         return nobet(
@@ -213,25 +262,26 @@ def decide(ex, bankroll):
             away,
             f"{h}-{a}",
             f"{ex.get('timeRemaining')} Q{q}",
-            "Cronometro o quarto non affidabili: senza tempo corretto la stima sarebbe casuale.",
-            [
-                "Tempo non validato",
-                "Rischio calcolo alto",
-                "Puntata consigliata 0 €"
-            ],
-            line
+            "Cronometro o quarto non affidabili.",
+            ["Tempo non validato", "Puntata consigliata 0 €"],
+            line,
+            extracted=ex
         )
 
     played = (q - 1) * 10 + (10 - left)
     rem = max(0, 40 - played)
 
     if played <= 0:
-        played = .1
+        played = 0.1
 
     ppm = total / played
 
-    q1_total, q2_total, q3_total = quarter_totals(ex)
-    trend_factor, trend_desc = trend_quarti(q1_total, q2_total, q3_total)
+    q1 = quarter_total(ex, "q1Home", "q1Away")
+    q2 = quarter_total(ex, "q2Home", "q2Away")
+    q3 = quarter_total(ex, "q3Home", "q3Away")
+    q4 = quarter_total(ex, "q4Home", "q4Away")
+
+    trend_factor, trend_desc = trend_quarti(q1, q2, q3, q4)
 
     phase = {1: .97, 2: .95, 3: .93, 4: .88}.get(q, .90)
     fatigue = .96 if q >= 3 else 1
@@ -253,8 +303,8 @@ def decide(ex, bankroll):
     po = prob(value)
     pu = 100 - po
 
-    over_line_attesa = round(pred - MARGINE_SICUREZZA, 1)
-    under_line_attesa = round(pred + MARGINE_SICUREZZA, 1)
+    over_wait = round(pred - MARGINE_SICUREZZA, 1)
+    under_wait = round(pred + MARGINE_SICUREZZA, 1)
 
     if value >= MARGINE_SICUREZZA:
         side = "OVER"
@@ -265,17 +315,14 @@ def decide(ex, bankroll):
 
     conf = 0
     conf += 22
-    conf += 18 if ex.get("oddsOver") and ex.get("oddsUnder") else 8
+    conf += 18 if odds_over and odds_under else 8
     conf += 20 if played >= 8 else 8
     conf += 25 if abs(value) >= 12 else 18 if abs(value) >= 9 else 10 if abs(value) >= 7 else 0
     conf += 8 if home != "Squadra A" and away != "Squadra B" else 0
-    conf += 6 if q1_total and q2_total else 0
+    conf += 8 if q1 is not None and q2 is not None else 0
 
     if played < 5:
         conf -= 10
-
-    if q == 4 and rem < 3:
-        conf += 5
 
     conf = max(0, min(90, round(conf)))
 
@@ -285,84 +332,48 @@ def decide(ex, bankroll):
     fh = round(pred * share)
     fa = round(pred - fh)
 
-    trend_line = f"Trend quarti: Q1 {q1_total if q1_total is not None else '-'} / Q2 {q2_total if q2_total is not None else '-'} / Q3 {q3_total if q3_total is not None else '-'}"
-
     if side and conf >= 68 and st > 0:
         signal = "BET"
         action = f"GIOCA {side}"
-        text = f"Scommetti {side} {line}"
-
+        decision_text = f"Scommetti {side} {line}"
         reason = (
-            f"Totale previsto {pred}. Linea bookmaker {line}. "
-            f"Margine {value:+.1f}. Il margine supera la soglia di sicurezza di {MARGINE_SICUREZZA} punti. "
-            f"Ritmo {ritmo(ppm)}, giocati {played:.1f} minuti, restano {rem:.1f}. "
-            f"{trend_desc}. Stake consigliato {st} € su bankroll {bankroll:.2f} €."
+            f"Margine sufficiente per giocare ora. Totale previsto {pred}, "
+            f"linea attuale {line}, margine {value:+.1f}."
         )
-
-        why = [
-            f"Pronostico: {side}",
-            f"Totale previsto: {pred}",
-            f"Linea attuale: {line}",
-            f"Margine sulla linea: {value:+.1f}",
-            trend_line,
-            f"Andamento: {trend_desc}",
-            f"Linea OVER conveniente fino a {over_line_attesa}",
-            f"Linea UNDER conveniente da {under_line_attesa}",
-            f"Stake consigliato: {st} €"
-        ]
-
-    elif abs(value) >= 5:
+    elif abs(value) >= 4:
         signal = "OBSERVE"
         action = "ASPETTA"
-        text = "Aspetta una linea più conveniente"
-
+        decision_text = "Aspetta una linea più conveniente"
         reason = (
-            f"Totale previsto {pred}. Linea attuale {line}. "
-            f"Margine {value:+.1f}, non abbastanza sicuro per entrare ora. "
-            f"{trend_desc}. "
-            f"OVER conveniente solo a {over_line_attesa} o meno. "
-            f"UNDER conveniente solo a {under_line_attesa} o più."
+            f"Margine insufficiente per giocare ora. Totale previsto {pred}, "
+            f"linea attuale {line}, margine {value:+.1f}."
         )
-
-        why = [
-            "Non entrare adesso",
-            f"Totale previsto: {pred}",
-            f"Linea attuale: {line}",
-            trend_line,
-            f"Andamento: {trend_desc}",
-            f"OVER giocabile solo se la linea scende a {over_line_attesa} o meno",
-            f"UNDER giocabile solo se la linea sale a {under_line_attesa} o più",
-            "Puntata consigliata 0 €"
-        ]
-
     else:
         signal = "NO_BET"
         action = "NO BET"
-        text = "Non scommettere"
-
+        decision_text = "Non scommettere"
         reason = (
-            f"Totale previsto {pred}. Linea attuale {line}. "
-            f"Margine {value:+.1f}: troppo vicino alla linea bookmaker. "
-            f"{trend_desc}. "
-            f"OVER conveniente solo a {over_line_attesa} o meno. "
-            f"UNDER conveniente solo a {under_line_attesa} o più."
+            f"Linea troppo vicina alla previsione. Totale previsto {pred}, "
+            f"linea attuale {line}, margine {value:+.1f}."
         )
 
-        why = [
-            "Edge insufficiente",
-            f"Totale previsto: {pred}",
-            f"Linea attuale: {line}",
-            trend_line,
-            f"Andamento: {trend_desc}",
-            f"OVER conveniente fino a {over_line_attesa}",
-            f"UNDER conveniente da {under_line_attesa}",
-            "Puntata consigliata 0 €"
-        ]
+    why = [
+        f"Totale previsto: {pred}",
+        f"Linea bookmaker scelta: {line}",
+        f"Margine: {value:+.1f}",
+        f"Ritmo attuale: {ppm:.2f} punti/min",
+        f"Trend ritmo: {trend_desc}",
+        f"Q1: {q1 if q1 is not None else '-'} punti",
+        f"Q2: {q2 if q2 is not None else '-'} punti",
+        f"Q3: {q3 if q3 is not None else '-'} punti",
+        f"OVER giocabile a {over_wait} o meno",
+        f"UNDER giocabile da {under_wait} o più"
+    ]
 
     return {
         "signal": signal,
         "action": action,
-        "decision_text": text,
+        "decision_text": decision_text,
         "side": side,
         "line": line,
         "stake": st,
@@ -371,25 +382,31 @@ def decide(ex, bankroll):
         "clock": f"{ex.get('timeRemaining')} Q{q}",
         "teams": {"home": home, "away": away},
         "rhythm": ritmo(ppm),
+        "ppm": round(ppm, 2),
+        "played": round(played, 1),
+        "remaining": round(rem, 1),
         "total_predicted": pred,
         "final_score": f"{fh}-{fa}",
         "value": round(value, 1),
         "prob_over": po,
         "prob_under": pu,
-        "over_wait_line": over_line_attesa,
-        "under_wait_line": under_line_attesa,
-        "q1_total": q1_total,
-        "q2_total": q2_total,
-        "q3_total": q3_total,
-        "trend_factor": round(trend_factor, 3),
+        "over_wait_line": over_wait,
+        "under_wait_line": under_wait,
+        "q1_total": q1,
+        "q2_total": q2,
+        "q3_total": q3,
+        "q4_total": q4,
         "trend_desc": trend_desc,
+        "trend_factor": round(trend_factor, 3),
+        "all_lines": all_lines,
         "reason": reason,
         "why": why,
-        "source": "screenshot-first + trend quarti"
+        "source": "screenshot-first + trend quarti",
+        "extracted": ex
     }
 
 
-def nobet(home, away, score, clock, reason, why, line="-"):
+def nobet(home, away, score, clock, reason, why, line="-", extracted=None):
     return {
         "signal": "NO_BET",
         "action": "NO BET",
@@ -402,6 +419,9 @@ def nobet(home, away, score, clock, reason, why, line="-"):
         "clock": clock,
         "teams": {"home": home, "away": away},
         "rhythm": "non valutabile",
+        "ppm": "-",
+        "played": "-",
+        "remaining": "-",
         "total_predicted": "-",
         "final_score": "-",
         "value": 0,
@@ -409,9 +429,15 @@ def nobet(home, away, score, clock, reason, why, line="-"):
         "prob_under": 50,
         "over_wait_line": "-",
         "under_wait_line": "-",
+        "q1_total": None,
+        "q2_total": None,
+        "q3_total": None,
+        "q4_total": None,
+        "trend_desc": "-",
         "reason": reason,
         "why": why,
-        "source": "screenshot-first"
+        "source": "screenshot-first",
+        "extracted": extracted or {}
     }
 
 
@@ -439,10 +465,11 @@ def shot():
         return jsonify({"error": "Nessuna immagine"}), 400
 
     ex = extract(f.read(), f.mimetype or "image/jpeg")
+    decision = decide(ex, bankroll)
 
     return jsonify({
         "extracted": ex,
-        "decision": decide(ex, bankroll),
+        "decision": decision,
         "mode": "screenshot-first + trend quarti"
     })
 
@@ -468,19 +495,19 @@ def bet():
         f"✅ <b>Giocata registrata</b>\\n"
         f"{str(p.get('side')).upper()} {p.get('line')}\\n"
         f"Puntata: {p.get('stake')} €\\n"
-        f"Fonte: screenshot-first. Aggiorna con nuovo screenshot."
+        f"Fonte: screenshot-first."
     )
 
     return jsonify({
         "ok": True,
-        "message": "Giocata registrata. Per rivalutarla carica un nuovo screenshot."
+        "message": "Giocata registrata."
     })
 
 
 @app.route("/api/bet/quality")
 def quality():
     return jsonify({
-        "message": "In modalità screenshot-first la qualità si aggiorna caricando un nuovo screenshot."
+        "message": "Aggiorna caricando un nuovo screenshot live."
     })
 
 
