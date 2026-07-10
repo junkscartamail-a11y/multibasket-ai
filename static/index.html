@@ -1,77 +1,729 @@
-
 <!doctype html>
 <html lang="it">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>MultiBasket AI PRO</title>
-<style>
-:root{--bg:#050b14;--card:#0d1726;--line:#26364f;--text:#f8fafc;--muted:#b9c9dc;--blue:#2f7df6;--cyan:#38bdf8;--green:#22c55e;--red:#ef4444;--amber:#f59e0b}
-*{box-sizing:border-box}
-body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at top,#10213b 0,#050b14 42%,#020617 100%);color:var(--text)}
-.app{max-width:960px;margin:0 auto;padding:18px 14px 40px}
-.hero{border:1px solid rgba(56,189,248,.35);background:linear-gradient(135deg,#0f172a 0%,#1d4ed8 55%,#0891b2 100%);border-radius:26px;padding:22px;margin-bottom:16px;box-shadow:0 20px 60px rgba(0,0,0,.28)}
-.hero h1{margin:0;font-size:36px;line-height:1.02;font-weight:1000}.hero p{margin:12px 0 0;color:#e0f2fe;font-size:17px;line-height:1.4}
-.card{background:linear-gradient(180deg,rgba(15,29,49,.98),rgba(8,17,31,.98));border:1px solid var(--line);border-radius:24px;padding:16px;margin-bottom:14px;box-shadow:0 12px 36px rgba(0,0,0,.22)}
-label,.label{display:block;font-weight:800;margin-bottom:8px;font-size:17px}
-input,button{width:100%;border-radius:18px;border:1px solid var(--line);padding:15px 16px;font-size:17px;background:#07111f;color:white}
-button{border:0;margin-top:12px;font-weight:1000;letter-spacing:.02em;background:linear-gradient(180deg,#41c5f7,#238adf);color:#03111f;min-height:58px;cursor:pointer}
-button:active{transform:scale(.99)}.secondary{background:#152238;color:#f8fafc;border:1px solid #31425e}
-.uploadRow{display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:center}
-.preview{width:120px;height:120px;object-fit:cover;border-radius:18px;border:1px solid var(--line);background:#07111f;display:none}
-.previewPlaceholder{width:120px;height:120px;display:grid;place-items:center;border-radius:18px;border:1px solid var(--line);background:#07111f;color:#93a4ba;font-size:13px;text-align:center;padding:10px}
-.statusOk{font-weight:900;color:#bbf7d0;font-size:20px;margin-bottom:2px}.small{color:#b9d8ef;font-size:14px;line-height:1.45}
-.result{position:relative;border-radius:24px;padding:26px 22px;margin-bottom:14px;overflow:hidden;border:1px solid rgba(255,255,255,.16);box-shadow:0 18px 50px rgba(0,0,0,.28)}
-.result:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at top right,rgba(255,255,255,.18),transparent 38%);pointer-events:none}
-.resultInner{position:relative;display:grid;grid-template-columns:1fr 280px;gap:18px;align-items:center}
-@media(max-width:720px){.resultInner{grid-template-columns:1fr}.uploadRow{grid-template-columns:1fr}.preview,.previewPlaceholder{width:100%;height:170px}}
-.result.blue{background:linear-gradient(135deg,#1e3a8a,#0284c7)}.result.green{background:linear-gradient(135deg,#047857,#16a34a)}.result.red{background:linear-gradient(135deg,#991b1b,#ef4444)}.result.amber{background:linear-gradient(135deg,#92400e,#f59e0b)}
-.main{font-size:50px;line-height:.95;font-weight:1000;margin-bottom:8px}.actionText{font-size:24px;font-weight:1000;text-transform:uppercase;margin-bottom:18px}.reason{font-size:19px;line-height:1.35}
-.stakeBox{border:1px solid rgba(255,255,255,.28);border-radius:18px;padding:18px;text-align:center;background:rgba(0,0,0,.14)}
-.stakeBox .t{font-size:14px;font-weight:900;text-transform:uppercase;color:#ffe4e6}.stakeBox .v{font-size:48px;font-weight:1000;margin-top:6px}
-.probGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.probCard{border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:12px;text-align:center;background:rgba(0,0,0,.18)}.probCard b{font-size:30px}
-.matchCard,.waitCard,.rhythmCard{background:linear-gradient(135deg,#0b1424,#132541);border:1px solid #31527d;border-radius:24px;padding:18px;margin-bottom:14px;box-shadow:0 14px 40px rgba(0,0,0,.24)}
-.matchTop{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:25px;font-weight:1000;margin-bottom:10px}.badges{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px}.badge{border-radius:10px;padding:7px 10px;font-weight:900;background:#17243a;border:1px solid #2c3f5e}.badge.green{color:#86efac;border-color:#22c55e}.badge.amber{color:#facc15;border-color:#f59e0b}.badge.gray{color:#dbeafe}
-.metrics{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid #37516f;border-left:1px solid #37516f}@media(max-width:760px){.metrics{grid-template-columns:repeat(2,1fr)}}
-.metric{min-height:118px;padding:16px 10px;text-align:center;border-right:1px solid #37516f;border-bottom:1px solid #37516f}.metric .k{font-size:13px;color:#cbd5e1;text-transform:uppercase;font-weight:800}.metric .v{font-size:34px;font-weight:900;margin-top:7px}.metric .s{font-size:14px;color:#cbd5e1}
-.redTxt{color:#ff6b6b}.greenTxt{color:#7ee787}.yellowTxt{color:#facc15}.sectionTitle{font-size:23px;font-weight:1000;margin-bottom:14px}
-.waitGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:620px){.waitGrid{grid-template-columns:1fr}}
-.waitItem{border-radius:18px;padding:20px;text-align:center;border:1px solid #30465f;background:rgba(0,0,0,.16)}.waitItem.over{border-color:#16a34a;background:linear-gradient(135deg,rgba(22,163,74,.2),rgba(0,0,0,.14))}.waitItem.under{border-color:#ef4444;background:linear-gradient(135deg,rgba(239,68,68,.18),rgba(0,0,0,.14))}.waitItem .top{font-size:18px;font-weight:1000}.waitItem .line{font-size:42px;font-weight:1000;margin:8px 0}
-.rhythmGrid{display:grid;grid-template-columns:1fr 1.1fr;gap:18px}@media(max-width:720px){.rhythmGrid{grid-template-columns:1fr}}
-.barRow{display:grid;grid-template-columns:70px 1fr;gap:10px;align-items:center;margin:10px 0;color:#dbeafe}.bar{height:14px;background:#334155;border-radius:99px;overflow:hidden}.bar span{display:block;height:100%;border-radius:99px;background:#22c55e;width:0%}.bar.q2 span{background:#f59e0b}.bar.q3 span,.bar.q4 span{background:#64748b}
-.why{background:#0b1424;border:1px solid #26364f;border-radius:18px;padding:14px;margin-top:14px;color:#dbeafe;line-height:1.45}.why div{margin:7px 0}.tools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}@media(max-width:620px){.tools{grid-template-columns:1fr}}
-.debug{display:none;white-space:pre-wrap;background:#020617;border:1px solid #334155;border-radius:16px;padding:12px;font-size:12px;color:#cbd5e1;overflow:auto;max-height:260px}
-</style>
+  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <title>MultiBasket AI PRO 2.0</title>
+
+  <link
+    rel="stylesheet"
+    href="/static/style.css"
+  >
 </head>
+
 <body>
-<main class="app">
-<section class="hero"><h1>🏀 MultiBasket AI PRO</h1><p>Carica lo screenshot live: risposta rapida su giocata, stake, totale stimato e linea più conveniente da aspettare.</p></section>
-<div class="card"><label>Bankroll attuale (€)</label><input id="bankroll" type="number" value="25" step="0.5"></div>
-<div class="card"><div class="uploadRow"><img id="preview" class="preview"><div id="ph" class="previewPlaceholder">Anteprima screenshot</div><div><div id="uploadTitle" class="statusOk">📸 Screenshot live</div><div id="shotStatus" class="small">Carica uno screenshot chiaro con punteggio, quarto, cronometro, linee U/O e quote.</div><input id="shot" type="file" accept="image/*"><button id="analyzeShot">📷 ANALIZZA SCREENSHOT</button><button id="newShot" class="secondary" style="display:none">📷 NUOVO SCREENSHOT</button></div></div></div>
-<section id="result" class="result blue"><div class="resultInner"><div><div id="mainAction" class="main">CARICA</div><div id="decisionText" class="actionText">SCREENSHOT</div><div id="reason" class="reason">Ti dirò cosa scommettere, quanto puntare o quale linea aspettare.</div></div><div><div class="stakeBox"><div class="t">Puntata consigliata</div><div id="stake" class="v">-</div></div><div class="probGrid"><div class="probCard"><div>OVER</div><b id="probOver">-</b></div><div class="probCard"><div>UNDER</div><b id="probUnder">-</b></div></div></div></div></section>
-<section class="matchCard"><div class="matchTop"><span id="homeTeam">Squadra A</span><span id="score">-</span><span id="awayTeam">Squadra B</span></div><div class="badges"><span id="quarterBadge" class="badge green">Q-</span><span id="clockBadge" class="badge amber">-</span><span id="phaseBadge" class="badge gray">Live</span></div><div class="metrics"><div class="metric"><div class="k">Totale previsto</div><div id="pred" class="v">-</div><div class="s">punti</div></div><div class="metric"><div class="k">Linea bookmaker</div><div id="bookLine" class="v">-</div><div class="s">Over/Under</div></div><div class="metric"><div class="k">Margine</div><div id="margin" class="v">-</div><div id="marginSub" class="s">sulla linea</div></div><div class="metric"><div class="k">Affidabilità</div><div id="conf" class="v yellowTxt">-</div><div class="s">livello</div></div><div class="metric"><div class="k">Ritmo attuale</div><div id="ppm" class="v">-</div><div class="s">punti/min</div></div><div class="metric"><div class="k">Minuti giocati</div><div id="played" class="v">-</div><div class="s">su 40:00</div></div><div class="metric"><div class="k">Minuti rimanenti</div><div id="remaining" class="v">-</div><div class="s">alla fine</div></div><div class="metric"><div class="k">Risultato stimato</div><div id="finalScore" class="v">-</div><div id="finalTotal" class="s">Totale -</div></div></div></section>
-<section class="waitCard"><div class="sectionTitle">🎯 LINEE CONVENIENTI DA ASPETTARE</div><div class="waitGrid"><div class="waitItem over"><div class="top">PER GIOCARE <span class="greenTxt">OVER</span></div><div class="small">Aspetta una linea</div><div id="overWait" class="line greenTxt">≤ -</div><div class="small">o inferiore</div></div><div class="waitItem under"><div class="top">PER GIOCARE <span class="redTxt">UNDER</span></div><div class="small">Aspetta una linea</div><div id="underWait" class="line redTxt">≥ -</div><div class="small">o superiore</div></div></div></section>
-<section class="rhythmCard"><div class="sectionTitle">📊 ANALISI DEL RITMO</div><div class="rhythmGrid"><div><div class="small" style="font-weight:900;text-transform:uppercase">Punti per quarto</div><div class="barRow"><div id="q1Text">Q1 -</div><div class="bar"><span id="q1Bar"></span></div></div><div class="barRow"><div id="q2Text">Q2 -</div><div class="bar q2"><span id="q2Bar"></span></div></div><div class="barRow"><div id="q3Text">Q3 -</div><div class="bar q3"><span id="q3Bar"></span></div></div><div class="barRow"><div id="q4Text">Q4 -</div><div class="bar q4"><span id="q4Bar"></span></div></div></div><div><div class="small" style="font-weight:900;text-transform:uppercase">Trend ritmo</div><div id="trendDesc" style="color:#60a5fa;font-weight:900;margin:10px 0">-</div><div id="trendExplain" class="small">Carica uno screenshot per leggere l’andamento dei quarti.</div></div></div><div id="why" class="why"></div></section>
-<section class="card"><div class="tools"><button id="health">Controlla server</button><button id="telegram" class="secondary">Test Telegram</button><button id="toggleDebug" class="secondary">Mostra JSON</button></div><div id="status" class="small" style="margin-top:10px">Pronto.</div><pre id="debug" class="debug"></pre></section>
-<section class="card"><div class="label">Ho scommesso</div><input id="betSide" placeholder="OVER oppure UNDER"><input id="betLine" type="number" step="0.5" placeholder="Linea giocata"><input id="betStake" type="number" step="0.5" placeholder="Puntata €"><button id="registerBet">Registra giocata</button><div id="qualityText" class="small" style="margin-top:8px"></div></section>
-</main>
-<script>
-const $=id=>document.getElementById(id);let lastDecision=null,lastExtracted=null;
-function clsForSignal(s){if(s==="BET")return"result green";if(s==="OBSERVE")return"result amber";if(s==="NO_BET")return"result red";return"result blue"}
-function fmt(v,suffix=""){if(v===null||v===undefined||v==="")return"-";return String(v)+suffix}
-function setBar(id,val){let n=Number(val);let pct=(!isFinite(n)||n<=0)?0:Math.min(100,Math.round(n/45*100));$(id).style.width=pct+"%"}
-function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
-function trendExplain(j){const q1=Number(j.q1_total),q2=Number(j.q2_total);if(isFinite(q1)&&isFinite(q2)){if(q2<q1)return"Il secondo quarto ha prodotto meno punti del primo: ritmo in calo.";if(q2>q1)return"Il secondo quarto ha prodotto più punti del primo: ritmo in aumento.";return"I primi due quarti sono molto simili: ritmo stabile."}return"Trend non completamente leggibile dallo screenshot."}
-function setResult(j){lastDecision=j;$("result").className=clsForSignal(j.signal);$("mainAction").textContent=j.action||"NO BET";$("decisionText").textContent=j.decision_text||"Non scommettere";$("reason").textContent=j.reason||"-";$("stake").textContent=(j.stake??0)+" €";$("probOver").textContent=(j.prob_over??50)+"%";$("probUnder").textContent=(j.prob_under??50)+"%";$("homeTeam").textContent=j.teams?.home||"Squadra A";$("awayTeam").textContent=j.teams?.away||"Squadra B";$("score").textContent=j.score||"-";$("quarterBadge").textContent=(j.clock||"").includes("Q")?("Q"+((j.clock||"").split("Q")[1]||"-")):"Q-";$("clockBadge").textContent=(j.clock||"-").split(" ")[0]||"-";$("phaseBadge").textContent=(j.clock||"").startsWith("0:")?"Intervallo/Fine quarto":"Live";$("pred").textContent=fmt(j.total_predicted);$("bookLine").textContent=fmt(j.line);let val=Number(j.value||0);$("margin").textContent=(val>0?"+":"")+fmt(j.value);$("margin").className="v "+(val>0?"greenTxt":val<0?"redTxt":"");$("marginSub").textContent=val>=0?"sopra la linea":"sotto la linea";$("conf").textContent=fmt(j.confidence," /100");$("ppm").textContent=fmt(j.ppm);$("played").textContent=fmt(j.played);$("remaining").textContent=fmt(j.remaining);$("finalScore").textContent=fmt(j.final_score);$("finalTotal").textContent="Totale "+fmt(j.total_predicted);$("overWait").textContent="≤ "+fmt(j.over_wait_line);$("underWait").textContent="≥ "+fmt(j.under_wait_line);let q1=j.q1_total,q2=j.q2_total,q3=j.q3_total,q4=j.q4_total;$("q1Text").textContent="Q1 "+(q1??"-");$("q2Text").textContent="Q2 "+(q2??"-");$("q3Text").textContent="Q3 "+(q3??"-");$("q4Text").textContent="Q4 "+(q4??"-");setBar("q1Bar",q1);setBar("q2Bar",q2);setBar("q3Bar",q3);setBar("q4Bar",q4);$("trendDesc").textContent=j.trend_desc||"-";$("trendExplain").textContent=trendExplain(j);$("why").innerHTML=(j.why||[]).map(x=>"<div>• "+escapeHtml(x)+"</div>").join("");$("betSide").value=j.side||"";$("betLine").value=j.line||"";$("betStake").value=j.stake||0;$("debug").textContent=JSON.stringify({extracted:lastExtracted,decision:j},null,2)}
-$("shot").onchange=()=>{const f=$("shot").files[0];if(!f)return;$("preview").src=URL.createObjectURL(f);$("preview").style.display="block";$("ph").style.display="none";$("newShot").style.display="block";$("uploadTitle").textContent="✅ Screenshot caricato";$("shotStatus").textContent="Pronto per l'analisi."}
-$("newShot").onclick=()=>{$("shot").value="";$("preview").style.display="none";$("ph").style.display="grid";$("newShot").style.display="none";$("uploadTitle").textContent="📸 Screenshot live";$("shotStatus").textContent="Carica un nuovo screenshot."}
-$("analyzeShot").onclick=async()=>{const f=$("shot").files[0];if(!f){$("shotStatus").textContent="Carica prima uno screenshot.";return}const fd=new FormData();fd.append("image",f);fd.append("bankroll",parseFloat($("bankroll").value)||25);$("shotStatus").textContent="AI in lettura...";const t0=performance.now();try{const r=await fetch("/api/screenshot/analyze",{method:"POST",body:fd});const j=await r.json();if(!r.ok)throw new Error(j.error||"Errore analisi");lastExtracted=j.extracted||{};const sec=((performance.now()-t0)/1000).toFixed(1);$("uploadTitle").textContent="✅ Screenshot caricato";$("shotStatus").textContent="Analisi completata in "+sec+"s";setResult(j.decision)}catch(e){$("shotStatus").textContent="Errore analisi: "+e.message}}
-async function post(url,body){const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await r.json().catch(()=>({error:"Risposta non valida"}));if(!r.ok)throw new Error(j.error||"Errore");return j}
-$("health").onclick=async()=>{try{const j=await(await fetch("/api/health")).json();$("status").textContent="Telegram: "+(j.telegram?"SI":"NO")+" · OpenAI: "+(j.openai?"SI":"NO")+" · "+j.mode}catch(e){$("status").textContent="Errore server."}}
-$("telegram").onclick=async()=>{try{const j=await post("/api/telegram/test",{});$("status").textContent=j.message}catch(e){$("status").textContent="Telegram non configurato."}}
-$("toggleDebug").onclick=()=>{const d=$("debug");d.style.display=d.style.display==="block"?"none":"block"}
-$("registerBet").onclick=async()=>{try{const j=await post("/api/bet/register",{source:lastDecision?lastDecision.source:"screenshot-first",side:$("betSide").value,line:parseFloat($("betLine").value),stake:parseFloat($("betStake").value),bankroll:parseFloat($("bankroll").value)||25});$("qualityText").textContent=j.message||"Registrata."}catch(e){$("qualityText").textContent="Errore registrazione."}}
-</script>
+  <main class="app">
+
+    <section class="hero">
+      <h1>🏀 MultiBasket AI PRO 2.0</h1>
+
+      <p>
+        Analisi live da screenshot, previsione Over/Under,
+        ricerca partita tramite API-Sports e aggiornamenti Telegram.
+      </p>
+    </section>
+
+
+    <!-- BANKROLL -->
+
+    <section class="card">
+      <label for="bankroll">
+        Bankroll attuale (€)
+      </label>
+
+      <input
+        id="bankroll"
+        type="number"
+        value="25"
+        min="0"
+        step="0.50"
+        inputmode="decimal"
+      >
+    </section>
+
+
+    <!-- UPLOAD SCREENSHOT -->
+
+    <section class="card">
+      <div class="upload-row">
+
+        <img
+          id="preview"
+          class="preview"
+          alt="Anteprima screenshot"
+        >
+
+        <div
+          id="placeholder"
+          class="preview-placeholder"
+        >
+          Anteprima dello screenshot
+        </div>
+
+        <div>
+          <div
+            id="uploadTitle"
+            class="upload-title"
+          >
+            📸 Screenshot live
+          </div>
+
+          <div
+            id="shotStatus"
+            class="small"
+          >
+            Carica uno screenshot chiaro con punteggio,
+            quarto, cronometro, linee Over/Under e quote.
+          </div>
+
+          <input
+            id="shot"
+            type="file"
+            accept="image/*"
+          >
+
+          <button
+            id="analyzeShot"
+            type="button"
+          >
+            📷 ANALIZZA SCREENSHOT
+          </button>
+
+          <button
+            id="newShot"
+            type="button"
+            class="secondary-button"
+            style="display:none"
+          >
+            📷 NUOVO SCREENSHOT
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- RISULTATO PRINCIPALE -->
+
+    <section
+      id="result"
+      class="result result-blue"
+    >
+      <div class="result-grid">
+
+        <div>
+          <div
+            id="mainAction"
+            class="main-action"
+          >
+            CARICA
+          </div>
+
+          <div
+            id="decisionText"
+            class="decision-text"
+          >
+            SCREENSHOT
+          </div>
+
+          <div
+            id="reason"
+            class="reason"
+          >
+            Ti dirò cosa scommettere, quanto puntare
+            oppure quale linea aspettare.
+          </div>
+        </div>
+
+
+        <div>
+          <div class="stake-box">
+            <div class="stake-title">
+              Puntata consigliata
+            </div>
+
+            <div
+              id="stake"
+              class="stake-value"
+            >
+              -
+            </div>
+          </div>
+
+
+          <div class="probability-grid">
+
+            <div class="probability-box">
+              OVER
+
+              <strong id="probOver">
+                -
+              </strong>
+            </div>
+
+            <div class="probability-box">
+              UNDER
+
+              <strong id="probUnder">
+                -
+              </strong>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- DATI PARTITA -->
+
+    <section class="match-card">
+
+      <div class="match-top">
+        <span id="homeTeam">
+          Squadra A
+        </span>
+
+        <span id="score">
+          -
+        </span>
+
+        <span id="awayTeam">
+          Squadra B
+        </span>
+      </div>
+
+
+      <div class="badges">
+
+        <span
+          id="quarterBadge"
+          class="badge badge-green"
+        >
+          Q-
+        </span>
+
+        <span
+          id="clockBadge"
+          class="badge badge-amber"
+        >
+          -
+        </span>
+
+        <span
+          id="phaseBadge"
+          class="badge"
+        >
+          Live
+        </span>
+
+      </div>
+
+
+      <div class="metrics">
+
+        <div class="metric">
+          <div class="metric-label">
+            Totale previsto
+          </div>
+
+          <div
+            id="pred"
+            class="metric-value"
+          >
+            -
+          </div>
+
+          <div class="metric-subtitle">
+            punti
+          </div>
+        </div>
+
+
+        <div class="metric">
+          <div class="metric-label">
+            Linea bookmaker
+          </div>
+
+          <div
+            id="bookLine"
+            class="metric-value"
+          >
+            -
+          </div>
+
+          <div class="metric-subtitle">
+            Over / Under
+          </div>
+        </div>
+
+
+        <div class="metric">
+          <div class="metric-label">
+            Margine
+          </div>
+
+          <div
+            id="margin"
+            class="metric-value"
+          >
+            -
+          </div>
+
+          <div
+            id="marginSub"
+            class="metric-subtitle"
+          >
+            sulla linea
+          </div>
+        </div>
+
+
+        <div class="metric">
+          <div class="metric-label">
+            Affidabilità
+          </div>
+
+          <div
+            id="conf"
+            class="metric-value warning-text"
+          >
+            -
+          </div>
+
+          <div class="metric-subtitle">
+            su 100
+          </div>
+        </div>
+
+
+        <div class="metric">
+          <div class="metric-label">
+            Ritmo attuale
+          </div>
+
+          <div
+            id="ppm"
+            class="metric-value"
+          >
+            -
+          </div>
+
+          <div class="metric-subtitle">
+            punti / minuto
+          </div>
+        </div>
+
+
+        <div class="metric">
+          <div class="metric-label">
+            Minuti giocati
+          </div>
+
+          <div
+            id="played"
+            class="metric-value"
+          >
+            -
+          </div>
+
+          <div class="metric-subtitle">
+            su 40
+          </div>
+        </div>
+
+
+        <div class="metric">
+          <div class="metric-label">
+            Minuti rimanenti
+          </div>
+
+          <div
+            id="remaining"
+            class="metric-value"
+          >
+            -
+          </div>
+
+          <div class="metric-subtitle">
+            alla fine
+          </div>
+        </div>
+
+
+        <div class="metric">
+          <div class="metric-label">
+            Finale stimato
+          </div>
+
+          <div
+            id="finalScore"
+            class="metric-value"
+          >
+            -
+          </div>
+
+          <div
+            id="finalTotal"
+            class="metric-subtitle"
+          >
+            Totale -
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- LINEE CONVENIENTI -->
+
+    <section class="wait-card">
+
+      <div class="section-title">
+        🎯 LINEE CONVENIENTI DA ASPETTARE
+      </div>
+
+
+      <div class="wait-grid">
+
+        <div class="wait-item wait-over">
+
+          <div class="wait-heading">
+            PER GIOCARE
+            <span class="success-text">
+              OVER
+            </span>
+          </div>
+
+          <div class="small">
+            Aspetta una linea
+          </div>
+
+          <div
+            id="overWait"
+            class="wait-line success-text"
+          >
+            ≤ -
+          </div>
+
+          <div class="small">
+            o inferiore
+          </div>
+        </div>
+
+
+        <div class="wait-item wait-under">
+
+          <div class="wait-heading">
+            PER GIOCARE
+            <span class="danger-text">
+              UNDER
+            </span>
+          </div>
+
+          <div class="small">
+            Aspetta una linea
+          </div>
+
+          <div
+            id="underWait"
+            class="wait-line danger-text"
+          >
+            ≥ -
+          </div>
+
+          <div class="small">
+            o superiore
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ANALISI RITMO -->
+
+    <section class="rhythm-card">
+
+      <div class="section-title">
+        📊 ANALISI DEL RITMO
+      </div>
+
+
+      <div class="rhythm-grid">
+
+        <div>
+
+          <div class="small">
+            PUNTI PER QUARTO
+          </div>
+
+
+          <div class="bar-row">
+            <div id="q1Text">
+              Q1 -
+            </div>
+
+            <div class="bar">
+              <span id="q1Bar"></span>
+            </div>
+          </div>
+
+
+          <div class="bar-row">
+            <div id="q2Text">
+              Q2 -
+            </div>
+
+            <div class="bar bar-q2">
+              <span id="q2Bar"></span>
+            </div>
+          </div>
+
+
+          <div class="bar-row">
+            <div id="q3Text">
+              Q3 -
+            </div>
+
+            <div class="bar bar-q3">
+              <span id="q3Bar"></span>
+            </div>
+          </div>
+
+
+          <div class="bar-row">
+            <div id="q4Text">
+              Q4 -
+            </div>
+
+            <div class="bar bar-q4">
+              <span id="q4Bar"></span>
+            </div>
+          </div>
+
+        </div>
+
+
+        <div>
+
+          <div class="small">
+            TREND DEL RITMO
+          </div>
+
+          <div
+            id="trendDesc"
+            class="trend-description"
+          >
+            -
+          </div>
+
+          <div class="small">
+            Il sistema confronta i parziali dei quarti
+            e corregge la previsione in base ad accelerazione,
+            rallentamento, fatica e differenza di punteggio.
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div
+        id="why"
+        class="why"
+      >
+        <div>
+          • Carica uno screenshot per avviare l’analisi.
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- MONITORAGGIO LIVE -->
+
+    <section class="live-card">
+
+      <div class="section-title">
+        📡 MONITORAGGIO LIVE E TELEGRAM
+      </div>
+
+
+      <div class="tools">
+
+        <button
+          id="findLive"
+          type="button"
+          class="green-button"
+        >
+          🔎 TROVA PARTITA LIVE
+        </button>
+
+
+        <button
+          id="checkNow"
+          type="button"
+          class="amber-button"
+        >
+          📲 CONTROLLA ORA SU TELEGRAM
+        </button>
+
+      </div>
+
+
+      <button
+        id="listLive"
+        type="button"
+        class="secondary-button"
+      >
+        📋 MOSTRA PARTITE LIVE API
+      </button>
+
+
+      <div
+        id="liveStatus"
+        class="status-box small"
+      >
+        Prima analizza uno screenshot,
+        poi prova ad agganciare la partita live.
+      </div>
+
+
+      <div
+        id="candidates"
+        class="candidates"
+      ></div>
+
+    </section>
+
+
+    <!-- CONTROLLO SISTEMA -->
+
+    <section class="card">
+
+      <div class="section-title">
+        ⚙️ CONTROLLO SISTEMA
+      </div>
+
+
+      <div class="tools">
+
+        <button
+          id="health"
+          type="button"
+        >
+          CONTROLLA SERVER
+        </button>
+
+
+        <button
+          id="telegram"
+          type="button"
+          class="secondary-button"
+        >
+          TEST TELEGRAM
+        </button>
+
+      </div>
+
+
+      <button
+        id="toggleDebug"
+        type="button"
+        class="secondary-button"
+      >
+        MOSTRA / NASCONDI JSON
+      </button>
+
+
+      <div
+        id="status"
+        class="status-box small"
+      >
+        Pronto.
+      </div>
+
+
+      <pre
+        id="debug"
+        class="debug"
+      ></pre>
+
+    </section>
+
+
+    <!-- REGISTRA GIOCATA -->
+
+    <section class="card">
+
+      <div class="section-title">
+        💰 HO SCOMMESSO
+      </div>
+
+
+      <label for="betSide">
+        Tipo di giocata
+      </label>
+
+      <input
+        id="betSide"
+        type="text"
+        placeholder="OVER oppure UNDER"
+        autocomplete="off"
+      >
+
+
+      <label for="betLine">
+        Linea giocata
+      </label>
+
+      <input
+        id="betLine"
+        type="number"
+        step="0.5"
+        inputmode="decimal"
+        placeholder="Esempio: 149.5"
+      >
+
+
+      <label for="betStake">
+        Puntata (€)
+      </label>
+
+      <input
+        id="betStake"
+        type="number"
+        step="0.5"
+        min="0"
+        inputmode="decimal"
+        placeholder="Esempio: 1"
+      >
+
+
+      <button
+        id="registerBet"
+        type="button"
+      >
+        REGISTRA GIOCATA
+      </button>
+
+
+      <div
+        id="qualityText"
+        class="status-box small"
+      ></div>
+
+    </section>
+
+  </main>
+
+
+  <script src="/static/app.js"></script>
 </body>
 </html>
-  
