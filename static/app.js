@@ -4,31 +4,41 @@ let lastDecision = null;
 let lastExtracted = null;
 let liveGameId = null;
 
+
 /* =========================
    FUNZIONI GENERICHE
 ========================= */
 
 function formatValue(value) {
-  if (value === null || value === undefined || value === "") {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
     return "-";
   }
 
   return String(value);
 }
 
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (character) => {
-    const replacements = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    };
 
-    return replacements[character];
-  });
+function escapeHtml(value) {
+  return String(value).replace(
+    /[&<>"']/g,
+    (character) => {
+      const replacements = {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      };
+
+      return replacements[character];
+    }
+  );
 }
+
 
 function getResultClass(signal) {
   if (signal === "BET") {
@@ -46,6 +56,7 @@ function getResultClass(signal) {
   return "result result-blue";
 }
 
+
 function setProgressBar(id, value) {
   const element = $(id);
   const number = Number(value);
@@ -54,21 +65,32 @@ function setProgressBar(id, value) {
     return;
   }
 
-  if (!Number.isFinite(number) || number <= 0) {
+  if (
+    !Number.isFinite(number) ||
+    number <= 0
+  ) {
     element.style.width = "0%";
     return;
   }
 
-  const percentage = Math.min(100, Math.round((number / 45) * 100));
-  element.style.width = `${percentage}%`;
+  const percentage = Math.min(
+    100,
+    Math.round((number / 45) * 100)
+  );
+
+  element.style.width =
+    `${percentage}%`;
 }
+
 
 async function postJson(url, body) {
   const response = await fetch(url, {
     method: "POST",
+
     headers: {
       "Content-Type": "application/json",
     },
+
     body: JSON.stringify(body),
   });
 
@@ -85,13 +107,41 @@ async function postJson(url, body) {
   if (!response.ok) {
     throw new Error(
       data.error ||
-        data.message ||
-        `Errore server ${response.status}`
+      data.message ||
+      `Errore server ${response.status}`
     );
   }
 
   return data;
 }
+
+
+/* =========================
+   DATA E ORA
+========================= */
+
+function getItalianDate() {
+  return new Date().toLocaleDateString(
+    "it-IT",
+    {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }
+  );
+}
+
+
+function getItalianTime() {
+  return new Date().toLocaleTimeString(
+    "it-IT",
+    {
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+  );
+}
+
 
 /* =========================
    DEBUG
@@ -116,6 +166,7 @@ function updateDebug(extra = null) {
   );
 }
 
+
 /* =========================
    RENDER DEL PRONOSTICO
 ========================= */
@@ -123,13 +174,15 @@ function updateDebug(extra = null) {
 function renderDecision(decision) {
   lastDecision = decision;
 
-  $("result").className = getResultClass(decision.signal);
+  $("result").className =
+    getResultClass(decision.signal);
 
   $("mainAction").textContent =
     decision.action || "NO BET";
 
   $("decisionText").textContent =
-    decision.decision_text || "Non scommettere";
+    decision.decision_text ||
+    "Non scommettere";
 
   $("reason").textContent =
     decision.reason || "-";
@@ -144,22 +197,27 @@ function renderDecision(decision) {
     `${decision.prob_under ?? 50}%`;
 
   $("homeTeam").textContent =
-    decision.teams?.home || "Squadra A";
+    decision.teams?.home ||
+    "Squadra A";
 
   $("awayTeam").textContent =
-    decision.teams?.away || "Squadra B";
+    decision.teams?.away ||
+    "Squadra B";
 
   $("score").textContent =
     decision.score || "-";
 
-  const clock = decision.clock || "-";
+  const clock =
+    decision.clock || "-";
 
   if (clock.includes("Q")) {
     const parts = clock.split("Q");
+
     $("quarterBadge").textContent =
       `Q${parts[1] || "-"}`;
   } else {
-    $("quarterBadge").textContent = "Q-";
+    $("quarterBadge").textContent =
+      "Q-";
   }
 
   $("clockBadge").textContent =
@@ -171,15 +229,19 @@ function renderDecision(decision) {
       : "Live";
 
   $("pred").textContent =
-    formatValue(decision.total_predicted);
+    formatValue(
+      decision.total_predicted
+    );
 
   $("bookLine").textContent =
     formatValue(decision.line);
 
-  const value = Number(decision.value || 0);
+  const value =
+    Number(decision.value || 0);
 
   $("margin").textContent =
-    `${value > 0 ? "+" : ""}${formatValue(decision.value)}`;
+    `${value > 0 ? "+" : ""}` +
+    `${formatValue(decision.value)}`;
 
   $("margin").className =
     `metric-value ${
@@ -196,7 +258,9 @@ function renderDecision(decision) {
       : "sotto la linea";
 
   $("conf").textContent =
-    formatValue(decision.confidence);
+    formatValue(
+      decision.confidence
+    );
 
   $("ppm").textContent =
     formatValue(decision.ppm);
@@ -205,36 +269,69 @@ function renderDecision(decision) {
     formatValue(decision.played);
 
   $("remaining").textContent =
-    formatValue(decision.remaining);
+    formatValue(
+      decision.remaining
+    );
 
   $("finalScore").textContent =
-    formatValue(decision.final_score);
+    formatValue(
+      decision.final_score
+    );
 
   $("finalTotal").textContent =
-    `Totale ${formatValue(decision.total_predicted)}`;
+    `Totale ${formatValue(
+      decision.total_predicted
+    )}`;
 
   $("overWait").textContent =
-    `≤ ${formatValue(decision.over_wait_line)}`;
+    `≤ ${formatValue(
+      decision.over_wait_line
+    )}`;
 
   $("underWait").textContent =
-    `≥ ${formatValue(decision.under_wait_line)}`;
+    `≥ ${formatValue(
+      decision.under_wait_line
+    )}`;
 
   $("q1Text").textContent =
-    `Q1 ${formatValue(decision.q1_total)}`;
+    `Q1 ${formatValue(
+      decision.q1_total
+    )}`;
 
   $("q2Text").textContent =
-    `Q2 ${formatValue(decision.q2_total)}`;
+    `Q2 ${formatValue(
+      decision.q2_total
+    )}`;
 
   $("q3Text").textContent =
-    `Q3 ${formatValue(decision.q3_total)}`;
+    `Q3 ${formatValue(
+      decision.q3_total
+    )}`;
 
   $("q4Text").textContent =
-    `Q4 ${formatValue(decision.q4_total)}`;
+    `Q4 ${formatValue(
+      decision.q4_total
+    )}`;
 
-  setProgressBar("q1Bar", decision.q1_total);
-  setProgressBar("q2Bar", decision.q2_total);
-  setProgressBar("q3Bar", decision.q3_total);
-  setProgressBar("q4Bar", decision.q4_total);
+  setProgressBar(
+    "q1Bar",
+    decision.q1_total
+  );
+
+  setProgressBar(
+    "q2Bar",
+    decision.q2_total
+  );
+
+  setProgressBar(
+    "q3Bar",
+    decision.q3_total
+  );
+
+  setProgressBar(
+    "q4Bar",
+    decision.q4_total
+  );
 
   $("trendDesc").textContent =
     decision.trend_desc || "-";
@@ -243,7 +340,9 @@ function renderDecision(decision) {
     (decision.why || [])
       .map(
         (item) =>
-          `<div>• ${escapeHtml(item)}</div>`
+          `<div>• ${escapeHtml(
+            item
+          )}</div>`
       )
       .join("");
 
@@ -259,264 +358,329 @@ function renderDecision(decision) {
   updateDebug();
 }
 
+
 /* =========================
    CARICAMENTO SCREENSHOT
 ========================= */
 
-$("shot").addEventListener("change", () => {
-  const file = $("shot").files[0];
+$("shot").addEventListener(
+  "change",
+  () => {
+    const file =
+      $("shot").files[0];
 
-  if (!file) {
-    return;
+    if (!file) {
+      return;
+    }
+
+    $("preview").src =
+      URL.createObjectURL(file);
+
+    $("preview").style.display =
+      "block";
+
+    $("placeholder").style.display =
+      "none";
+
+    $("newShot").style.display =
+      "block";
+
+    $("uploadTitle").textContent =
+      "✅ Screenshot caricato";
+
+    $("shotStatus").textContent =
+      "Pronto per l'analisi.";
   }
+);
 
-  $("preview").src =
-    URL.createObjectURL(file);
 
-  $("preview").style.display =
-    "block";
+$("newShot").addEventListener(
+  "click",
+  () => {
+    $("shot").value = "";
 
-  $("placeholder").style.display =
-    "none";
+    $("preview").style.display =
+      "none";
 
-  $("newShot").style.display =
-    "block";
+    $("placeholder").style.display =
+      "grid";
 
-  $("uploadTitle").textContent =
-    "✅ Screenshot caricato";
+    $("newShot").style.display =
+      "none";
 
-  $("shotStatus").textContent =
-    "Pronto per l'analisi.";
-});
+    $("uploadTitle").textContent =
+      "📸 Screenshot live";
 
-$("newShot").addEventListener("click", () => {
-  $("shot").value = "";
+    $("shotStatus").textContent =
+      "Carica un nuovo screenshot.";
 
-  $("preview").style.display =
-    "none";
+    liveGameId = null;
 
-  $("placeholder").style.display =
-    "grid";
+    $("liveStatus").textContent =
+      "Prima analizza uno screenshot, poi aggancia la partita live.";
 
-  $("newShot").style.display =
-    "none";
+    $("candidates").innerHTML = "";
 
-  $("uploadTitle").textContent =
-    "📸 Screenshot live";
+    updateDebug();
+  }
+);
 
-  $("shotStatus").textContent =
-    "Carica un nuovo screenshot.";
-
-  liveGameId = null;
-
-  $("liveStatus").textContent =
-    "Prima analizza uno screenshot, poi aggancia la partita live.";
-
-  $("candidates").innerHTML = "";
-
-  updateDebug();
-});
 
 /* =========================
    ANALISI SCREENSHOT
 ========================= */
 
-$("analyzeShot").addEventListener("click", async () => {
-  const file = $("shot").files[0];
+$("analyzeShot").addEventListener(
+  "click",
+  async () => {
+    const file =
+      $("shot").files[0];
 
-  if (!file) {
-    $("shotStatus").textContent =
-      "Carica prima uno screenshot.";
+    if (!file) {
+      $("shotStatus").textContent =
+        "Carica prima uno screenshot.";
 
-    return;
-  }
-
-  const formData = new FormData();
-
-  formData.append("image", file);
-
-  formData.append(
-    "bankroll",
-    parseFloat($("bankroll").value) || 25
-  );
-
-  $("shotStatus").textContent =
-    "AI in lettura...";
-
-  liveGameId = null;
-
-  try {
-    const response = await fetch(
-      "/api/screenshot/analyze",
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        data.error || "Errore durante l'analisi."
-      );
+      return;
     }
 
-    lastExtracted =
-      data.extracted || {};
+    const formData =
+      new FormData();
+
+    formData.append(
+      "image",
+      file
+    );
+
+    formData.append(
+      "bankroll",
+      parseFloat(
+        $("bankroll").value
+      ) || 25
+    );
 
     $("shotStatus").textContent =
-      "Analisi completata.";
+      "AI in lettura...";
 
-    renderDecision(data.decision);
+    liveGameId = null;
 
-    $("liveStatus").textContent =
-      "Ora puoi premere TROVA PARTITA LIVE.";
-  } catch (error) {
-    $("shotStatus").textContent =
-      `Errore analisi: ${error.message}`;
+    try {
+      const response = await fetch(
+        "/api/screenshot/analyze",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+          "Errore durante l'analisi."
+        );
+      }
+
+      lastExtracted =
+        data.extracted || {};
+
+      $("shotStatus").textContent =
+        "Analisi completata.";
+
+      renderDecision(
+        data.decision
+      );
+
+      $("liveStatus").textContent =
+        "Ora puoi premere TROVA PARTITA LIVE.";
+    } catch (error) {
+      $("shotStatus").textContent =
+        `Errore analisi: ${error.message}`;
+
+      updateDebug({
+        screenshotError:
+          error.message,
+      });
+    }
   }
-});
+);
+
 
 /* =========================
    TROVA PARTITA LIVE
 ========================= */
 
-$("findLive").addEventListener("click", async () => {
-  if (!lastExtracted) {
-    $("liveStatus").textContent =
-      "Prima analizza uno screenshot.";
+$("findLive").addEventListener(
+  "click",
+  async () => {
+    if (!lastExtracted) {
+      $("liveStatus").textContent =
+        "Prima analizza uno screenshot.";
 
-    return;
+      return;
+    }
+
+    $("liveStatus").textContent =
+      "Ricerca partita live in corso...";
+
+    $("candidates").innerHTML = "";
+
+    try {
+      const data = await postJson(
+        "/api/live/find",
+        {
+          homeTeam:
+            lastExtracted.homeTeam,
+
+          awayTeam:
+            lastExtracted.awayTeam,
+
+          homeScore:
+            lastExtracted.homeScore,
+
+          awayScore:
+            lastExtracted.awayScore,
+        }
+      );
+
+      liveGameId =
+        data.game_id;
+
+      $("liveStatus").textContent =
+        `✅ Partita agganciata: ` +
+        `${data.home} - ${data.away}` +
+        ` · Punteggio API: ${data.score}` +
+        ` · Affinità: ${data.match_score}`;
+
+      showCandidates(
+        data.candidates || []
+      );
+
+      updateDebug(data);
+
+    } catch (error) {
+      $("liveStatus").textContent =
+        `❌ ${error.message}. ` +
+        `Premi MOSTRA PARTITE LIVE API ` +
+        `per verificare se la competizione è coperta.`;
+
+      updateDebug({
+        findLiveError:
+          error.message,
+      });
+    }
   }
+);
 
-  $("liveStatus").textContent =
-    "Ricerca partita live in corso...";
-
-  $("candidates").innerHTML = "";
-
-  try {
-    const data = await postJson(
-      "/api/live/find",
-      {
-        homeTeam:
-          lastExtracted.homeTeam,
-
-        awayTeam:
-          lastExtracted.awayTeam,
-
-        homeScore:
-          lastExtracted.homeScore,
-
-        awayScore:
-          lastExtracted.awayScore,
-      }
-    );
-
-    liveGameId = data.game_id;
-
-    $("liveStatus").textContent =
-      `✅ Partita agganciata: ${data.home} - ${data.away}` +
-      ` · Punteggio API: ${data.score}` +
-      ` · Affinità: ${data.match_score}`;
-
-    showCandidates(
-      data.candidates || []
-    );
-
-    updateDebug(data);
-  } catch (error) {
-    $("liveStatus").textContent =
-      `❌ ${error.message}. Premi MOSTRA PARTITE LIVE API per verificare se la partita è coperta.`;
-
-    updateDebug({
-      findLiveError: error.message,
-    });
-  }
-});
 
 /* =========================
    LISTA PARTITE LIVE API
 ========================= */
 
-$("listLive").addEventListener("click", async () => {
-  $("liveStatus").textContent =
-    "Caricamento partite live API...";
+$("listLive").addEventListener(
+  "click",
+  async () => {
+    $("liveStatus").textContent =
+      "Caricamento partite live API...";
 
-  $("candidates").innerHTML = "";
+    $("candidates").innerHTML = "";
 
-  try {
-    const response = await fetch(
-      "/api/live/list"
-    );
-
-    const data = await response.json();
-
-    if (!response.ok || !data.ok) {
-      throw new Error(
-        data.error ||
-          "Errore nel caricamento delle partite."
+    try {
+      const response = await fetch(
+        "/api/live/list"
       );
-    }
 
-    $("liveStatus").textContent =
-      `Partite live trovate dall'API: ${data.count}`;
+      const data =
+        await response.json();
 
-    if (!data.games || data.games.length === 0) {
+      if (
+        !response.ok ||
+        !data.ok
+      ) {
+        throw new Error(
+          data.error ||
+          "Errore nel caricamento delle partite."
+        );
+      }
+
+      $("liveStatus").textContent =
+        `Partite live trovate dall'API: ${data.count}`;
+
+      if (
+        !data.games ||
+        data.games.length === 0
+      ) {
+        $("candidates").innerHTML =
+          `<div class="candidate">
+            Nessuna partita live restituita da API-Sports.
+            La competizione potrebbe non essere coperta.
+          </div>`;
+
+        updateDebug(data);
+        return;
+      }
+
       $("candidates").innerHTML =
-        `<div class="candidate">
-          Nessuna partita live restituita da API-Sports.
-          La competizione potrebbe non essere coperta.
-        </div>`;
+        data.games
+          .map(
+            (game) => `
+              <div class="candidate">
+                <strong>
+                  ${escapeHtml(game.home)} -
+                  ${escapeHtml(game.away)}
+                </strong>
+                <br>
 
-      return;
+                Punteggio:
+                ${escapeHtml(game.score)}
+                <br>
+
+                Stato:
+                ${escapeHtml(game.status)}
+                <br>
+
+                Campionato:
+                ${escapeHtml(
+                  game.league || "-"
+                )}
+                <br>
+
+                Paese:
+                ${escapeHtml(
+                  game.country || "-"
+                )}
+                <br>
+
+                Game ID:
+                ${escapeHtml(game.id)}
+              </div>
+            `
+          )
+          .join("");
+
+      updateDebug(data);
+
+    } catch (error) {
+      $("liveStatus").textContent =
+        `Errore lista live: ${error.message}`;
+
+      updateDebug({
+        liveListError:
+          error.message,
+      });
     }
-
-    $("candidates").innerHTML =
-      data.games
-        .map(
-          (game) => `
-            <div class="candidate">
-              <strong>
-                ${escapeHtml(game.home)} -
-                ${escapeHtml(game.away)}
-              </strong>
-              <br>
-              Punteggio:
-              ${escapeHtml(game.score)}
-              <br>
-              Stato:
-              ${escapeHtml(game.status)}
-              <br>
-              Campionato:
-              ${escapeHtml(game.league || "-")}
-              <br>
-              Paese:
-              ${escapeHtml(game.country || "-")}
-              <br>
-              Game ID:
-              ${escapeHtml(game.id)}
-            </div>
-          `
-        )
-        .join("");
-
-    updateDebug(data);
-  } catch (error) {
-    $("liveStatus").textContent =
-      `Errore lista live: ${error.message}`;
-
-    updateDebug({
-      liveListError: error.message,
-    });
   }
-});
+);
+
 
 /* =========================
    CANDIDATI PARTITA
 ========================= */
 
-function showCandidates(candidates) {
+function showCandidates(
+  candidates
+) {
   if (!candidates.length) {
     return;
   }
@@ -525,223 +689,418 @@ function showCandidates(candidates) {
     `<div class="small">
       Migliori corrispondenze trovate:
     </div>` +
+
     candidates
       .map(
         (candidate) => `
           <div class="candidate">
             <strong>
-              ${escapeHtml(candidate.home)} -
-              ${escapeHtml(candidate.away)}
+              ${escapeHtml(
+                candidate.home
+              )} -
+              ${escapeHtml(
+                candidate.away
+              )}
             </strong>
             <br>
+
             Punteggio API:
-            ${escapeHtml(candidate.score)}
+            ${escapeHtml(
+              candidate.score
+            )}
             <br>
+
             Affinità totale:
-            ${escapeHtml(candidate.score_value)}
+            ${escapeHtml(
+              candidate.score_value
+            )}
             <br>
+
             Affinità nomi:
-            ${escapeHtml(candidate.name_score)}
+            ${escapeHtml(
+              candidate.name_score
+            )}
             <br>
+
             Bonus punteggio:
-            ${escapeHtml(candidate.score_bonus)}
+            ${escapeHtml(
+              candidate.score_bonus
+            )}
             <br>
+
             Campionato:
-            ${escapeHtml(candidate.league || "-")}
+            ${escapeHtml(
+              candidate.league || "-"
+            )}
             <br>
+
             Stato:
-            ${escapeHtml(candidate.status || "-")}
+            ${escapeHtml(
+              candidate.status || "-"
+            )}
             <br>
+
             ID:
-            ${escapeHtml(candidate.id)}
+            ${escapeHtml(
+              candidate.id
+            )}
           </div>
         `
       )
       .join("");
 }
 
+
 /* =========================
    TELEGRAM: CONTROLLO LIVE
 ========================= */
 
-$("checkNow").addEventListener("click", async () => {
-  if (!liveGameId) {
-    $("liveStatus").textContent =
-      "Prima premi TROVA PARTITA LIVE.";
+$("checkNow").addEventListener(
+  "click",
+  async () => {
+    if (!liveGameId) {
+      $("liveStatus").textContent =
+        "Prima premi TROVA PARTITA LIVE.";
 
-    return;
+      return;
+    }
+
+    const side =
+      $("betSide")
+        .value
+        .trim()
+        .toUpperCase();
+
+    const line =
+      parseFloat(
+        $("betLine").value
+      );
+
+    const stake =
+      parseFloat(
+        $("betStake").value
+      );
+
+    if (
+      !side ||
+      !["OVER", "UNDER"].includes(side)
+    ) {
+      $("liveStatus").textContent =
+        "Inserisci correttamente OVER oppure UNDER.";
+
+      return;
+    }
+
+    if (!Number.isFinite(line)) {
+      $("liveStatus").textContent =
+        "Inserisci la linea giocata.";
+
+      return;
+    }
+
+    $("liveStatus").textContent =
+      "Invio aggiornamento Telegram...";
+
+    try {
+      const data = await postJson(
+        "/api/live/check-now",
+        {
+          game_id:
+            liveGameId,
+
+          homeTeam:
+            lastDecision?.teams?.home ||
+            lastExtracted?.homeTeam ||
+            "Squadra A",
+
+          awayTeam:
+            lastDecision?.teams?.away ||
+            lastExtracted?.awayTeam ||
+            "Squadra B",
+
+          side,
+          line,
+
+          stake:
+            Number.isFinite(stake)
+              ? stake
+              : 0,
+
+          expectedScore:
+            lastDecision?.final_score ||
+            "-",
+
+          expectedTotal:
+            lastDecision?.total_predicted ||
+            "-",
+
+          confidence:
+            lastDecision?.confidence ??
+            0,
+        }
+      );
+
+      $("liveStatus").textContent =
+        `📲 ${data.message}` +
+        ` · Punteggio: ${data.score}` +
+        ` · Totale: ${data.total}` +
+        ` · ${data.bet_state}`;
+
+      updateDebug(data);
+
+    } catch (error) {
+      $("liveStatus").textContent =
+        `Errore Telegram/live: ${error.message}`;
+
+      updateDebug({
+        telegramLiveError:
+          error.message,
+      });
+    }
   }
+);
 
-  const side =
-    $("betSide").value.trim();
-
-  const line =
-    parseFloat($("betLine").value);
-
-  if (!side || !Number.isFinite(line)) {
-    $("liveStatus").textContent =
-      "Inserisci OVER/UNDER e la linea giocata.";
-
-    return;
-  }
-
-  $("liveStatus").textContent =
-    "Invio aggiornamento Telegram...";
-
-  try {
-    const data = await postJson(
-      "/api/live/check-now",
-      {
-        game_id: liveGameId,
-        side,
-        line,
-      }
-    );
-
-    $("liveStatus").textContent =
-      `📲 ${data.message}` +
-      ` · Punteggio: ${data.score}` +
-      ` · Totale: ${data.total}` +
-      ` · ${data.bet_state}`;
-
-    updateDebug(data);
-  } catch (error) {
-    $("liveStatus").textContent =
-      `Errore Telegram/live: ${error.message}`;
-
-    updateDebug({
-      telegramLiveError: error.message,
-    });
-  }
-});
 
 /* =========================
    CONTROLLO SERVER
 ========================= */
 
-$("health").addEventListener("click", async () => {
-  try {
-    const response = await fetch(
-      "/api/health"
-    );
+$("health").addEventListener(
+  "click",
+  async () => {
+    try {
+      const response = await fetch(
+        "/api/health"
+      );
 
-    const data = await response.json();
+      const data =
+        await response.json();
 
-    $("status").textContent =
-      `Telegram: ${
-        data.telegram ? "SI" : "NO"
-      }` +
-      ` · OpenAI: ${
-        data.openai ? "SI" : "NO"
-      }` +
-      ` · Basket API: ${
-        data.basketball_api ? "SI" : "NO"
-      }` +
-      ` · ${data.mode || ""}`;
+      $("status").textContent =
+        `Telegram: ${
+          data.telegram
+            ? "SI"
+            : "NO"
+        }` +
 
-    updateDebug(data);
-  } catch (error) {
-    $("status").textContent =
-      `Errore server: ${error.message}`;
+        ` · OpenAI: ${
+          data.openai
+            ? "SI"
+            : "NO"
+        }` +
+
+        ` · Basket API: ${
+          data.basketball_api
+            ? "SI"
+            : "NO"
+        }` +
+
+        ` · ${data.mode || ""}`;
+
+      updateDebug(data);
+
+    } catch (error) {
+      $("status").textContent =
+        `Errore server: ${error.message}`;
+    }
   }
-});
+);
+
 
 /* =========================
    TEST TELEGRAM
 ========================= */
 
-$("telegram").addEventListener("click", async () => {
-  try {
-    const data = await postJson(
-      "/api/telegram/test",
-      {}
-    );
+$("telegram").addEventListener(
+  "click",
+  async () => {
+    try {
+      const data = await postJson(
+        "/api/telegram/test",
+        {}
+      );
 
-    $("status").textContent =
-      data.message || "Telegram funzionante.";
+      $("status").textContent =
+        data.message ||
+        "Telegram funzionante.";
 
-    updateDebug(data);
-  } catch (error) {
-    $("status").textContent =
-      `Telegram non configurato: ${error.message}`;
+      updateDebug(data);
 
-    updateDebug({
-      telegramTestError: error.message,
-    });
+    } catch (error) {
+      $("status").textContent =
+        `Telegram non configurato: ${error.message}`;
+
+      updateDebug({
+        telegramTestError:
+          error.message,
+      });
+    }
   }
-});
+);
+
 
 /* =========================
    MOSTRA JSON
 ========================= */
 
-$("toggleDebug").addEventListener("click", () => {
-  const debug = $("debug");
+$("toggleDebug").addEventListener(
+  "click",
+  () => {
+    const debug = $("debug");
 
-  if (debug.style.display === "block") {
-    debug.style.display = "none";
-  } else {
-    debug.style.display = "block";
+    if (
+      debug.style.display === "block"
+    ) {
+      debug.style.display = "none";
+    } else {
+      debug.style.display = "block";
+    }
   }
-});
+);
+
 
 /* =========================
    REGISTRA GIOCATA
 ========================= */
 
-$("registerBet").addEventListener("click", async () => {
-  const side =
-    $("betSide").value.trim();
+$("registerBet").addEventListener(
+  "click",
+  async () => {
+    const side =
+      $("betSide")
+        .value
+        .trim()
+        .toUpperCase();
 
-  const line =
-    parseFloat($("betLine").value);
+    const line =
+      parseFloat(
+        $("betLine").value
+      );
 
-  const stake =
-    parseFloat($("betStake").value);
+    const stake =
+      parseFloat(
+        $("betStake").value
+      );
 
-  if (!side || !Number.isFinite(line)) {
+    const bankroll =
+      parseFloat(
+        $("bankroll").value
+      ) || 25;
+
+    if (
+      !side ||
+      !["OVER", "UNDER"].includes(side)
+    ) {
+      $("qualityText").textContent =
+        "Inserisci correttamente OVER oppure UNDER.";
+
+      return;
+    }
+
+    if (!Number.isFinite(line)) {
+      $("qualityText").textContent =
+        "Inserisci la linea giocata.";
+
+      return;
+    }
+
+    if (
+      !Number.isFinite(stake) ||
+      stake <= 0
+    ) {
+      $("qualityText").textContent =
+        "Inserisci una puntata valida.";
+
+      return;
+    }
+
+    if (!lastDecision) {
+      $("qualityText").textContent =
+        "Prima analizza uno screenshot.";
+
+      return;
+    }
+
     $("qualityText").textContent =
-      "Inserisci OVER oppure UNDER e la linea.";
+      "Registrazione e invio Telegram...";
 
-    return;
+    try {
+      const data = await postJson(
+        "/api/bet/register",
+        {
+          source:
+            lastDecision.source ||
+            "MultiBasket AI PRO 2.0",
+
+          homeTeam:
+            lastDecision.teams?.home ||
+            lastExtracted?.homeTeam ||
+            "Squadra A",
+
+          awayTeam:
+            lastDecision.teams?.away ||
+            lastExtracted?.awayTeam ||
+            "Squadra B",
+
+          currentScore:
+            lastDecision.score ||
+            "-",
+
+          quarterClock:
+            lastDecision.clock ||
+            "-",
+
+          side,
+          line,
+          stake,
+          bankroll,
+
+          expectedScore:
+            lastDecision.final_score ||
+            "-",
+
+          expectedTotal:
+            lastDecision.total_predicted ||
+            "-",
+
+          confidence:
+            lastDecision.confidence ??
+            0,
+
+          overWaitLine:
+            lastDecision.over_wait_line ??
+            "-",
+
+          underWaitLine:
+            lastDecision.under_wait_line ??
+            "-",
+
+          date:
+            getItalianDate(),
+
+          time:
+            getItalianTime(),
+        }
+      );
+
+      $("qualityText").textContent =
+        data.message ||
+        "Giocata registrata.";
+
+      updateDebug(data);
+
+    } catch (error) {
+      $("qualityText").textContent =
+        `Errore registrazione: ${error.message}`;
+
+      updateDebug({
+        registerBetError:
+          error.message,
+      });
+    }
   }
+);
 
-  try {
-    const data = await postJson(
-      "/api/bet/register",
-      {
-        source:
-          lastDecision?.source ||
-          "MultiBasket AI PRO 2.0",
-
-        side,
-        line,
-
-        stake:
-          Number.isFinite(stake)
-            ? stake
-            : 0,
-
-        bankroll:
-          parseFloat(
-            $("bankroll").value
-          ) || 25,
-      }
-    );
-
-    $("qualityText").textContent =
-      data.message || "Giocata registrata.";
-
-    updateDebug(data);
-  } catch (error) {
-    $("qualityText").textContent =
-      `Errore registrazione: ${error.message}`;
-
-    updateDebug({
-      registerBetError: error.message,
-    });
-  }
-});
 
 /* =========================
    STATO INIZIALE
