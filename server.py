@@ -14,7 +14,7 @@ from api_basket import (
     evaluate_bet_state,
 )
 from telegram_bot import telegram_ready, send_telegram
-
+from history import add_bet, update_result, get_stats
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
@@ -418,7 +418,13 @@ def bet_register():
     )
 
     telegram_sent = send_telegram(message)
-
+add_bet({
+    "match": f"{home_team} - {away_team}",
+    "side": side,
+    "line": line,
+    "stake": stake,
+    "predicted_total": expected_total
+})
     return jsonify({
         "ok": True,
         "telegram_sent": telegram_sent,
@@ -470,7 +476,31 @@ def recalculate():
             "ok": False,
             "error": str(error)
         }), 500
+@app.route("/api/bet/result", methods=["POST"])
+def bet_result():
+    data = request.get_json()
 
+    index = data.get("index")
+    final_total = data.get("final_total")
+
+    updated = update_result(index, final_total)
+
+    if not updated:
+        return jsonify({
+            "ok": False,
+            "error": "Indice non valido o dati mancanti"
+        })
+
+    return jsonify({
+        "ok": True,
+        "updated": updated
+    })
+@app.route("/api/stats", methods=["GET"])
+def stats():
+    return jsonify({
+        "ok": True,
+        "stats": get_stats()
+    })
 if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
