@@ -1200,3 +1200,43 @@ $("recalculate").addEventListener(
     }
   }
 );
+/* =========================
+   SALVA RISULTATO FINALE
+========================= */
+
+$("saveResult").addEventListener("click", async () => {
+
+    const index = parseInt($("betIndex").value);
+    const total = parseFloat($("finalTotal").value);
+
+    if (isNaN(index) || isNaN(total)) {
+        alert("Inserisci indice e totale validi");
+        return;
+    }
+
+    try {
+
+        const res = await fetch("/api/bet/result", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                index: index,
+                final_total: total
+            })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.ok) {
+            throw new Error(data.error || "Errore salvataggio");
+        }
+
+        alert("✅ Risultato salvato!");
+
+    } catch (error) {
+        alert("❌ Errore: " + error.message);
+    }
+
+});
