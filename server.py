@@ -431,7 +431,45 @@ def bet_register():
             )
         )
     })
+    
+@app.route(
+    "/api/recalculate",
+    methods=["POST"]
+)
+def recalculate():
+    payload = request.get_json(
+        force=True
+    ) or {}
 
+    try:
+        bankroll = float(
+            payload.get(
+                "bankroll"
+            ) or 25
+        )
+
+    except (
+        TypeError,
+        ValueError
+    ):
+        bankroll = 25
+
+    try:
+        decision = decide(
+            payload,
+            bankroll
+        )
+
+        return jsonify({
+            "ok": True,
+            "decision": decision
+        })
+
+    except Exception as error:
+        return jsonify({
+            "ok": False,
+            "error": str(error)
+        }), 500
 
 if __name__ == "__main__":
     app.run(
