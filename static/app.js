@@ -1107,3 +1107,96 @@ $("registerBet").addEventListener(
 ========================= */
 
 updateDebug();
+/* =========================
+   RICALCOLO CON QUARTI MANUALI
+========================= */
+
+$("recalculate").addEventListener(
+  "click",
+  async () => {
+
+    if (!lastExtracted) {
+      alert(
+        "Prima analizza uno screenshot."
+      );
+      return;
+    }
+
+    const payload = {
+      ...lastExtracted,
+
+      q1Home:
+        $("q1Home").value || null,
+
+      q1Away:
+        $("q1Away").value || null,
+
+      q2Home:
+        $("q2Home").value || null,
+
+      q2Away:
+        $("q2Away").value || null,
+
+      q3Home:
+        $("q3Home").value || null,
+
+      q3Away:
+        $("q3Away").value || null,
+
+      q4Home:
+        $("q4Home").value || null,
+
+      q4Away:
+        $("q4Away").value || null
+    };
+
+    try {
+
+      const response =
+        await fetch(
+          "/api/recalculate",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+              ...payload,
+              bankroll:
+                parseFloat(
+                  $("bankroll").value
+                ) || 25
+            })
+          }
+        );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+          "Errore nel ricalcolo."
+        );
+      }
+
+      renderDecision(
+        data.decision
+      );
+
+      $("qualityText").textContent =
+        "✅ Analisi aggiornata con i quarti inseriti manualmente.";
+
+    } catch (error) {
+
+      $("qualityText").textContent =
+        `Errore: ${error.message}`;
+
+      console.error(error);
+
+    }
+  }
+);
